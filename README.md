@@ -55,8 +55,9 @@ pnpm init-fund
 This walks you through:
 - **Fund branding** -- name, tagline, logo, support email
 - **Module selection** -- checkboxes for each feature (all core modules enabled by default, uncheck what you don't need)
+- **Supabase credentials** -- project URL, anon key, and service role key (plus optional API keys for enabled modules)
 
-The setup script generates your `fund.config.ts` and a `.env.local` template.
+The setup script generates your `fund.config.ts` and `.env.local` with all credentials.
 
 > You can also edit `apps/crm/fund.config.ts` directly at any time to change branding or toggle modules on/off.
 
@@ -64,8 +65,7 @@ The setup script generates your `fund.config.ts` and a `.env.local` template.
 
 1. Create a new project at [supabase.com](https://supabase.com) (free tier works)
 2. **Save the database password** shown during project creation -- you'll need it in step 4
-3. Go to **Settings > API** and copy your project URL, anon key, and service role key
-4. Paste them into `apps/crm/.env.local` (created by the setup wizard)
+3. Go to **Settings > API** and have your project URL, anon key, and service role key ready -- the setup wizard will prompt you for them
 
 ### 4. Set Up the Database
 
