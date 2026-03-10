@@ -1204,7 +1204,7 @@ export default function CompanyView({ company, canEdit, isPartner, isFounder = f
                   currentUserId={currentPersonId}
                 />
                 <p className="mt-1 text-xs text-gray-500">
-                  Focus areas for the biomap (prevention, detection, treatment, etc.)
+                  Focus areas for this company
                 </p>
               </div>
             </div>

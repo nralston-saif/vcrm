@@ -9,7 +9,9 @@
     "typecheck": "turbo typecheck",
     "clean": "turbo clean && rm -rf node_modules",
     "format": "prettier --write \"**/*.{ts,tsx,md}\"",
-    "setup": "node scripts/setup.mjs"
+    "init-fund": "node scripts/setup.mjs",
+    "create-user": "node scripts/create-user.mjs",
+    "db:setup": "node scripts/db-setup.mjs"
   },
   "devDependencies": {
     "@clack/prompts": "^1.1.0",

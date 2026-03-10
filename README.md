@@ -23,7 +23,6 @@ Enable or disable features in `fund.config.ts`:
 | `portfolio` | Investment tracking with terms, valuations, round details, and lead partner assignment | -- |
 | `tickets` | Internal task management with priorities, due dates, assignments, and comments | -- |
 | `meetings` | Meeting scheduling with collaborative notes | -- |
-| `bioMap` | Interactive network visualization of people and companies | -- |
 | `notifications` | In-app notification system for application updates, ticket assignments, and decisions | -- |
 | `news` | AI-curated news feed relevant to your portfolio | -- |
 | `liveblocks` | Real-time collaborative editing for deliberation notes | [Liveblocks](https://liveblocks.io) account |
@@ -50,31 +49,30 @@ pnpm install
 ### 2. Run the Interactive Setup
 
 ```bash
-pnpm setup
+pnpm init-fund
 ```
 
 This walks you through:
 - **Fund branding** -- name, tagline, logo, support email
 - **Module selection** -- checkboxes for each feature (all core modules enabled by default, uncheck what you don't need)
-- **Supabase credentials** -- URL, anon key, and service role key
-- **Optional API keys** -- only prompted for modules that need them (Liveblocks, Anthropic, Twilio)
 
-The setup script generates your `fund.config.ts` and `.env.local` files automatically.
+The setup script generates your `fund.config.ts` and a `.env.local` template.
 
 > You can also edit `apps/crm/fund.config.ts` directly at any time to change branding or toggle modules on/off.
 
-### 3. Set Up the Database
+### 3. Add Supabase Credentials
 
-Create a new project at [supabase.com](https://supabase.com), then run the 6 migration files in order via the **SQL Editor**:
+1. Create a new project at [supabase.com](https://supabase.com) (free tier works)
+2. Go to **Settings > API** and copy your project URL, anon key, and service role key
+3. Paste them into `apps/crm/.env.local` (created by the setup wizard)
 
+### 4. Set Up the Database
+
+```bash
+pnpm db:setup
 ```
-supabase/migrations/001_core_schema.sql
-supabase/migrations/002_crm_tables.sql
-supabase/migrations/003_tickets_meetings.sql
-supabase/migrations/004_notifications_audit.sql
-supabase/migrations/005_stats_functions.sql
-supabase/migrations/006_storage.sql
-```
+
+This combines all migration files and copies the SQL to your clipboard. Paste it into the [Supabase SQL Editor](https://supabase.com/dashboard) and run it.
 
 Or using the Supabase CLI:
 
@@ -83,27 +81,15 @@ supabase link --project-ref YOUR_PROJECT_REF
 supabase db push
 ```
 
-### 4. Create Your First User
+### 5. Create Your First User
 
-VCRM uses invite-only authentication. Create your first user:
-
-1. Go to your Supabase dashboard > **Authentication** > **Users**
-2. Click **"Add user"** > **"Create new user"**
-3. Enter the email and password for your first partner
-4. Create the corresponding person record in the SQL Editor:
-
-```sql
-INSERT INTO people (auth_user_id, email, first_name, last_name, name)
-VALUES (
-  'AUTH_USER_UUID_FROM_STEP_3',
-  'partner@yourfund.vc',
-  'First',
-  'Last',
-  'First Last'
-);
+```bash
+pnpm create-user
 ```
 
-### 5. Start Development
+This prompts for email, password, first name, and last name -- then creates both the auth user and the linked CRM profile in one step.
+
+### 6. Start Development
 
 ```bash
 pnpm dev
@@ -127,7 +113,6 @@ vcrm/
 │       │   ├── people/            # Contact management
 │       │   ├── tickets/           # Task management
 │       │   ├── meetings/         # Meeting notes
-│       │   ├── bio-map/           # Network visualization
 │       │   ├── pipeline/          # Pipeline stage view
 │       │   ├── api/               # API routes
 │       │   └── auth/              # Authentication flows
@@ -222,23 +207,11 @@ Applications are marked as `portfolio` (invested) or `rejected`. If rejection em
 
 VCRM uses invite-only authentication. To add new team members:
 
-1. Go to your Supabase dashboard > **Authentication** > **Users**
-2. Click **"Add user"** > **"Invite user"**
-3. Enter their email -- they'll receive an invitation email
-4. Create their person record:
-
-```sql
-INSERT INTO people (auth_user_id, email, first_name, last_name, name)
-VALUES (
-  'AUTH_USER_UUID',
-  'newpartner@yourfund.vc',
-  'First',
-  'Last',
-  'First Last'
-);
+```bash
+pnpm create-user
 ```
 
-> Tip: You can automate this by creating an API route or admin page.
+This creates both the Supabase auth account and the linked CRM profile in one step.
 
 ---
 
@@ -310,7 +283,9 @@ Modify the stage constraint in your database and update the `CompanyStage` type 
 ### Commands
 
 ```bash
-pnpm setup        # Interactive setup wizard (branding, modules, env vars)
+pnpm init-fund    # Interactive setup wizard (branding, modules)
+pnpm db:setup     # Combine migrations and copy to clipboard
+pnpm create-user  # Create a new user (auth + CRM profile)
 pnpm dev          # Start development server (port 3001)
 pnpm build        # Build for production
 pnpm typecheck    # Run TypeScript type checking

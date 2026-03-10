@@ -68,10 +68,9 @@ export default function Navigation({ userName, personId }: { userName: string; p
   const crmItems = [
     { name: 'Companies', href: '/companies', enabled: true },
     { name: 'People', href: '/people', enabled: true },
-    { name: 'Bio-Map', href: '/bio-map', enabled: modules.bioMap },
   ].filter(item => item.enabled)
 
-  const isCrmActive = pathname === '/companies' || pathname === '/people' || pathname === '/bio-map' || pathname.startsWith('/companies/') || pathname.startsWith('/people/')
+  const isCrmActive = pathname === '/companies' || pathname === '/people' || pathname.startsWith('/companies/') || pathname.startsWith('/people/')
 
   return (
     <nav className="bg-white border-b border-gray-200 sticky top-0 z-40">
@@ -252,12 +251,14 @@ export default function Navigation({ userName, personId }: { userName: string; p
                       View Profile
                     </Link>
                   )}
-                  <Link
-                    href="/profile/settings"
-                    className="block px-4 py-3 text-base md:py-2 md:text-sm text-[#666666] hover:bg-[#f5f5f5] hover:text-[#1a1a1a]"
-                  >
-                    Settings
-                  </Link>
+                  {modules.sms && (
+                    <Link
+                      href="/profile/settings"
+                      className="block px-4 py-3 text-base md:py-2 md:text-sm text-[#666666] hover:bg-[#f5f5f5] hover:text-[#1a1a1a]"
+                    >
+                      Settings
+                    </Link>
+                  )}
                   <div className="h-px bg-gray-200 my-2 md:my-1" />
                   <button
                     onClick={handleLogout}

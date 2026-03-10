@@ -518,6 +518,18 @@ export default function TicketsClient({
         </button>
       </div>
 
+      {tickets.length === 0 ? (
+        <div className="bg-white rounded-xl border border-gray-200 p-12 text-center">
+          <div className="flex justify-center mb-4">
+            <svg className="w-12 h-12 text-gray-300" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M16.5 6v.75m0 3v.75m0 3v.75m0 3V18m-9-5.25h5.25M7.5 15h3M3.375 5.25c-.621 0-1.125.504-1.125 1.125v3.026a2.999 2.999 0 0 1 0 5.198v3.026c0 .621.504 1.125 1.125 1.125h17.25c.621 0 1.125-.504 1.125-1.125v-3.026a2.999 2.999 0 0 1 0-5.198V6.375c0-.621-.504-1.125-1.125-1.125H3.375Z" />
+            </svg>
+          </div>
+          <h3 className="text-lg font-semibold text-gray-900 mb-2">No tickets yet</h3>
+          <p className="text-gray-500">Create your first ticket to start tracking tasks.</p>
+        </div>
+      ) : (
+      <>
       {/* Main Layout: Content Left, Stats Right on desktop */}
       <div className="flex flex-col lg:flex-row gap-4 lg:gap-6">
         {/* Left side - Main content */}
@@ -817,6 +829,8 @@ export default function TicketsClient({
         <ReportsModal
           onClose={() => setShowReports(false)}
         />
+      )}
+      </>
       )}
     </div>
   )

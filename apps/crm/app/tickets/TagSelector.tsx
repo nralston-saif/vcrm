@@ -51,9 +51,7 @@ export default function TagSelector({ selectedTags, onChange, currentUserId }: T
       .order('name', { ascending: true })
 
     if (!error && data) {
-      // Filter out biomap focus tags - they have their own selector
-      const generalTags = data.filter(t => t.category !== 'biomap_focus')
-      setAvailableTags(generalTags)
+      setAvailableTags(data)
     }
   }
 

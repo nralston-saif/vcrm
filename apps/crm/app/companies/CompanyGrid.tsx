@@ -263,7 +263,17 @@ export default function CompanyGrid({ companies, isPartner = false, userId }: Co
       </div>
 
       {/* Company Grid */}
-      {filteredCompanies.length === 0 ? (
+      {companies.length === 0 ? (
+        <div className="bg-white rounded-lg shadow-sm border border-gray-100 p-12 text-center">
+          <div className="flex justify-center mb-4">
+            <svg className="w-12 h-12 text-gray-300" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M3.75 21h16.5M4.5 3h15M5.25 3v18m13.5-18v18M9 6.75h1.5m-1.5 3h1.5m-1.5 3h1.5m3-6H15m-1.5 3H15m-1.5 3H15M9 21v-3.375c0-.621.504-1.125 1.125-1.125h3.75c.621 0 1.125.504 1.125 1.125V21" />
+            </svg>
+          </div>
+          <h3 className="text-lg font-semibold text-gray-900 mb-2">No companies yet</h3>
+          <p className="text-gray-500">Companies are created automatically from deal applications, or you can add them manually.</p>
+        </div>
+      ) : filteredCompanies.length === 0 ? (
         <div className="text-center py-12">
           <p className="text-gray-500">No companies match your search</p>
         </div>
