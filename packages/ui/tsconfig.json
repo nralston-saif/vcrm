@@ -1,0 +1,10 @@
+{
+  "extends": "@vcrm/config/tsconfig.nextjs.json",
+  "compilerOptions": {
+    "paths": {
+      "@vcrm/ui/*": ["./src/*"]
+    }
+  },
+  "include": ["src/**/*"],
+  "exclude": ["node_modules"]
+}
