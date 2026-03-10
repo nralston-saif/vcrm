@@ -60,11 +60,12 @@ The setup script generates your `fund.config.ts` and a `.env.local` template.
 
 > You can also edit `apps/crm/fund.config.ts` directly at any time to change branding or toggle modules on/off.
 
-### 3. Add Supabase Credentials
+### 3. Create a Supabase Project
 
 1. Create a new project at [supabase.com](https://supabase.com) (free tier works)
-2. Go to **Settings > API** and copy your project URL, anon key, and service role key
-3. Paste them into `apps/crm/.env.local` (created by the setup wizard)
+2. **Save the database password** shown during project creation -- you'll need it in step 4
+3. Go to **Settings > API** and copy your project URL, anon key, and service role key
+4. Paste them into `apps/crm/.env.local` (created by the setup wizard)
 
 ### 4. Set Up the Database
 
@@ -72,14 +73,7 @@ The setup script generates your `fund.config.ts` and a `.env.local` template.
 pnpm db:setup
 ```
 
-This combines all migration files and copies the SQL to your clipboard. Paste it into the [Supabase SQL Editor](https://supabase.com/dashboard) and run it.
-
-Or using the Supabase CLI:
-
-```bash
-supabase link --project-ref YOUR_PROJECT_REF
-supabase db push
-```
+Enter your database password when prompted -- the script connects directly and runs all 6 migrations automatically.
 
 ### 5. Create Your First User
 
@@ -284,7 +278,7 @@ Modify the stage constraint in your database and update the `CompanyStage` type 
 
 ```bash
 pnpm init-fund    # Interactive setup wizard (branding, modules)
-pnpm db:setup     # Combine migrations and copy to clipboard
+pnpm db:setup     # Connect to Supabase and run all migrations
 pnpm create-user  # Create a new user (auth + CRM profile)
 pnpm dev          # Start development server (port 3001)
 pnpm build        # Build for production

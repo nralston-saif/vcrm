@@ -240,7 +240,7 @@ TWILIO_PHONE_NUMBER=
       `   ${pc.dim('(Supabase Dashboard → Settings → API)')}`,
       '',
       `2. Set up the database: ${pc.cyan('pnpm db:setup')}`,
-      `   ${pc.dim('Copies all migrations to your clipboard for the SQL Editor')}`,
+      `   ${pc.dim('Connects to your database and runs all migrations')}`,
       '',
       `3. Create your first user: ${pc.cyan('pnpm create-user')}`,
       '',
