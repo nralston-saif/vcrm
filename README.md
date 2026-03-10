@@ -41,12 +41,7 @@ Enable or disable features in `fund.config.ts`:
 ### 1. Clone & Install
 
 ```bash
-# SSH
-git clone git@github.com:nralston-saif/vcrm.git
-
-# or HTTPS
 git clone https://github.com/nralston-saif/vcrm.git
-
 cd vcrm
 pnpm install
 ```
