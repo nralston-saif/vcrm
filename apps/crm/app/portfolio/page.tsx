@@ -1,9 +1,12 @@
 import { createClient } from '@/lib/supabase/server'
+import { notFound } from 'next/navigation'
 import Navigation from '@/components/Navigation'
 import { requireAuth } from '@/lib/auth/requireAuth'
+import { fundConfig } from '@/fund.config'
 import PortfolioClient from './PortfolioClient'
 
 export default async function PortfolioPage() {
+  if (!fundConfig.modules.portfolio) notFound()
   const supabase = await createClient()
 
   const { profile } = await requireAuth()

@@ -39,71 +39,41 @@ Enable or disable features in `fund.config.ts`:
 - [pnpm](https://pnpm.io) 9+
 - A [Supabase](https://supabase.com) project (free tier works)
 
-### 1. Create Your Repo
-
-Click **"Use this template"** on GitHub to create your own repository, then clone it:
+### 1. Clone & Install
 
 ```bash
 git clone https://github.com/YOUR_ORG/YOUR_REPO.git
 cd YOUR_REPO
-```
-
-### 2. Install Dependencies
-
-```bash
 pnpm install
 ```
 
-### 3. Configure Your Fund
-
-Edit `apps/crm/fund.config.ts` to customize your fund's branding and enable/disable modules:
-
-```typescript
-export const fundConfig = {
-  name: 'Acme Ventures',
-  shortName: 'AV',
-  tagline: 'Investing in the future',
-  supportEmail: 'support@acmeventures.vc',
-
-  branding: {
-    logo: [
-      { text: 'ACME', weight: 'bold' as const },
-    ],
-    primaryColor: '#1a1a1a',
-    font: 'Montserrat',
-    fontUrl: 'https://fonts.googleapis.com/css2?family=Montserrat:wght@300;400;500;600;700;800&display=swap',
-  },
-
-  modules: {
-    deals: true,
-    portfolio: true,
-    tickets: true,
-    meetings: true,
-    bioMap: false,       // disable if you don't need it
-    notifications: true,
-    news: false,         // disable if you don't need AI news
-    liveblocks: false,   // enable if you set up Liveblocks
-    rejectionEmails: false,
-    sms: false,
-  },
-  // ...
-}
-```
-
-### 4. Set Up Supabase
-
-1. Create a new project at [supabase.com](https://supabase.com)
-2. Go to **Settings > API** and copy your project URL and keys
-3. Run the database migrations in order:
+### 2. Run the Interactive Setup
 
 ```bash
-# In the Supabase SQL Editor, run each migration file:
-# supabase/migrations/001_core_schema.sql
-# supabase/migrations/002_crm_tables.sql
-# supabase/migrations/003_tickets_meetings.sql
-# supabase/migrations/004_notifications_audit.sql
-# supabase/migrations/005_stats_functions.sql
-# supabase/migrations/006_storage.sql
+pnpm setup
+```
+
+This walks you through:
+- **Fund branding** -- name, tagline, logo, support email
+- **Module selection** -- checkboxes for each feature (all core modules enabled by default, uncheck what you don't need)
+- **Supabase credentials** -- URL, anon key, and service role key
+- **Optional API keys** -- only prompted for modules that need them (Liveblocks, Anthropic, Twilio)
+
+The setup script generates your `fund.config.ts` and `.env.local` files automatically.
+
+> You can also edit `apps/crm/fund.config.ts` directly at any time to change branding or toggle modules on/off.
+
+### 3. Set Up the Database
+
+Create a new project at [supabase.com](https://supabase.com), then run the 6 migration files in order via the **SQL Editor**:
+
+```
+supabase/migrations/001_core_schema.sql
+supabase/migrations/002_crm_tables.sql
+supabase/migrations/003_tickets_meetings.sql
+supabase/migrations/004_notifications_audit.sql
+supabase/migrations/005_stats_functions.sql
+supabase/migrations/006_storage.sql
 ```
 
 Or using the Supabase CLI:
@@ -113,28 +83,14 @@ supabase link --project-ref YOUR_PROJECT_REF
 supabase db push
 ```
 
-### 5. Configure Environment Variables
+### 4. Create Your First User
 
-```bash
-cp .env.example apps/crm/.env.local
-```
-
-Edit `apps/crm/.env.local` with your Supabase credentials:
-
-```bash
-NEXT_PUBLIC_SUPABASE_URL=https://your-project.supabase.co
-NEXT_PUBLIC_SUPABASE_ANON_KEY=your-anon-key
-SUPABASE_SERVICE_ROLE_KEY=your-service-role-key
-```
-
-### 6. Create Your First User
-
-Since VCRM uses invite-only authentication, you need to create your first user manually:
+VCRM uses invite-only authentication. Create your first user:
 
 1. Go to your Supabase dashboard > **Authentication** > **Users**
 2. Click **"Add user"** > **"Create new user"**
 3. Enter the email and password for your first partner
-4. Then create the corresponding person record in the SQL editor:
+4. Create the corresponding person record in the SQL Editor:
 
 ```sql
 INSERT INTO people (auth_user_id, email, first_name, last_name, name)
@@ -147,7 +103,7 @@ VALUES (
 );
 ```
 
-### 7. Start Development
+### 5. Start Development
 
 ```bash
 pnpm dev
@@ -354,6 +310,7 @@ Modify the stage constraint in your database and update the `CompanyStage` type 
 ### Commands
 
 ```bash
+pnpm setup        # Interactive setup wizard (branding, modules, env vars)
 pnpm dev          # Start development server (port 3001)
 pnpm build        # Build for production
 pnpm typecheck    # Run TypeScript type checking

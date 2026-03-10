@@ -1,6 +1,8 @@
 import { createClient } from '@/lib/supabase/server'
+import { notFound } from 'next/navigation'
 import Navigation from '@/components/Navigation'
 import { requireAuth } from '@/lib/auth/requireAuth'
+import { fundConfig } from '@/fund.config'
 import TicketsClient from './TicketsClient'
 
 // Types for the RPC response
@@ -52,6 +54,7 @@ type TicketsPageData = {
 export const dynamic = 'force-dynamic'
 
 export default async function TicketsPage() {
+  if (!fundConfig.modules.tickets) notFound()
   const supabase = await createClient()
 
   const { profile } = await requireAuth()

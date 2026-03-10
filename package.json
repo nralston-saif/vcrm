@@ -8,9 +8,12 @@
     "lint": "turbo lint",
     "typecheck": "turbo typecheck",
     "clean": "turbo clean && rm -rf node_modules",
-    "format": "prettier --write \"**/*.{ts,tsx,md}\""
+    "format": "prettier --write \"**/*.{ts,tsx,md}\"",
+    "setup": "node scripts/setup.mjs"
   },
   "devDependencies": {
+    "@clack/prompts": "^1.1.0",
+    "picocolors": "^1.1.1",
     "prettier": "^3.4.2",
     "turbo": "^2.3.0"
   }

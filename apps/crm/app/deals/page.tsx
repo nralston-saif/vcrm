@@ -1,6 +1,8 @@
 import { createClient } from '@/lib/supabase/server'
+import { notFound } from 'next/navigation'
 import Navigation from '@/components/Navigation'
 import { requireAuth } from '@/lib/auth/requireAuth'
+import { fundConfig } from '@/fund.config'
 import DealsClient from './DealsClient'
 
 type RawVote = {
@@ -70,6 +72,7 @@ function transformVotes(votes: RawVote[] | undefined): TransformedVote[] {
 }
 
 export default async function DealsPage(): Promise<React.ReactElement> {
+  if (!fundConfig.modules.deals) notFound()
   const supabase = await createClient()
 
   const { profile } = await requireAuth()

@@ -1,7 +1,9 @@
 import { createClient } from '@/lib/supabase/server'
+import { notFound } from 'next/navigation'
 import { Suspense } from 'react'
 import Navigation from '@/components/Navigation'
 import { requireAuth } from '@/lib/auth/requireAuth'
+import { fundConfig } from '@/fund.config'
 import BioMapClient from './BioMapClient'
 import type { Database } from '@/lib/types/database'
 import type { UserRole, UserStatus } from '@vcrm/supabase'
@@ -77,6 +79,7 @@ export type BioMapOrganization = {
 export const dynamic = 'force-dynamic'
 
 export default async function BioMapPage() {
+  if (!fundConfig.modules.bioMap) notFound()
   const supabase = await createClient()
 
   const { profile } = await requireAuth()
