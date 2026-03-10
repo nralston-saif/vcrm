@@ -49,8 +49,11 @@ pnpm install
 ### 2. Create a Supabase Project
 
 1. Create a new project at [supabase.com](https://supabase.com) (free tier works)
-2. **Save the database password** shown during project creation
-3. Go to **Settings > API** and have your project URL, anon key, and service role key ready
+2. **Save the database password** shown during project creation -- you'll need it during setup
+3. Once the project is created, you'll need three values from the Supabase dashboard:
+   - **Project URL** -- found on the project home page (looks like `https://abc123.supabase.co`)
+   - **Anon (public) key** -- go to **Project Settings** (gear icon) → **API Keys** → copy the `anon` `public` key
+   - **Service role key** -- same page, copy the `service_role` `secret` key (click to reveal it)
 
 ### 3. Run the Setup Wizard
 

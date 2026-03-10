@@ -154,23 +154,24 @@ async function main() {
   let twilioPhone = ''
 
   if (!skipEnv) {
-    p.log.message(`${pc.dim('Find these in your Supabase dashboard → Settings → API')}`)
+    p.log.message(`${pc.dim('Project URL is on your project\'s home page.')}`)
+    p.log.message(`${pc.dim('API keys are in Project Settings (gear icon) → API Keys.')}`)
 
     supabaseUrl = await p.text({
-      message: 'Supabase project URL',
+      message: 'Supabase project URL (from project home page)',
       placeholder: 'https://your-project.supabase.co',
       validate: validateSupabaseUrl,
     })
     if (p.isCancel(supabaseUrl)) { p.cancel('Setup cancelled.'); process.exit(0) }
 
     anonKey = await p.password({
-      message: 'Supabase anon (public) key',
+      message: 'Supabase anon (public) key (Project Settings → API Keys)',
       validate: validateKey('Anon key'),
     })
     if (p.isCancel(anonKey)) { p.cancel('Setup cancelled.'); process.exit(0) }
 
     serviceRoleKey = await p.password({
-      message: 'Supabase service role key',
+      message: 'Supabase service role key (same page, click to reveal)',
       validate: validateKey('Service role key'),
     })
     if (p.isCancel(serviceRoleKey)) { p.cancel('Setup cancelled.'); process.exit(0) }
