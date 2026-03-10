@@ -46,44 +46,32 @@ cd YOUR_REPO
 pnpm install
 ```
 
-### 2. Run the Interactive Setup
+### 2. Create a Supabase Project
+
+1. Create a new project at [supabase.com](https://supabase.com) (free tier works)
+2. **Save the database password** shown during project creation
+3. Go to **Settings > API** and have your project URL, anon key, and service role key ready
+
+### 3. Run the Setup Wizard
 
 ```bash
 pnpm init-fund
 ```
 
-This walks you through:
-- **Fund branding** -- name, tagline, logo, support email
-- **Module selection** -- checkboxes for each feature (all core modules enabled by default, uncheck what you don't need)
-- **Supabase credentials** -- project URL, anon key, and service role key (plus optional API keys for enabled modules)
+This single command walks you through the entire setup:
+1. **Fund branding** -- name, tagline, logo, support email
+2. **Module selection** -- checkboxes for each feature (core modules enabled by default)
+3. **Supabase credentials** -- project URL, anon key, service role key, and database password
+4. **Database migrations** -- connects directly and runs all schema migrations
+5. **First user creation** -- email, password, and name for your first login
+6. **Data import** (optional) -- import existing companies, contacts, and investments from CSV
+7. **Webhook setup** (optional) -- guidance for connecting your application intake form
 
-The setup script generates your `fund.config.ts` and `.env.local` with all credentials.
+When it's done, you're ready to go.
 
 > You can also edit `apps/crm/fund.config.ts` directly at any time to change branding or toggle modules on/off.
 
-### 3. Create a Supabase Project
-
-1. Create a new project at [supabase.com](https://supabase.com) (free tier works)
-2. **Save the database password** shown during project creation -- you'll need it in step 4
-3. Go to **Settings > API** and have your project URL, anon key, and service role key ready -- the setup wizard will prompt you for them
-
-### 4. Set Up the Database
-
-```bash
-pnpm db:setup
-```
-
-Enter your database password when prompted -- the script connects directly and runs all 6 migrations automatically.
-
-### 5. Create Your First User
-
-```bash
-pnpm create-user
-```
-
-This prompts for email, password, first name, and last name -- then creates both the auth user and the linked CRM profile in one step.
-
-### 6. Start Development
+### 4. Start Development
 
 ```bash
 pnpm dev
@@ -209,6 +197,23 @@ This creates both the Supabase auth account and the linked CRM profile in one st
 
 ---
 
+## Importing Existing Data
+
+If you have existing data in spreadsheets, you can import it via CSV:
+
+```bash
+pnpm import-data
+```
+
+CSV templates are included in the `templates/` folder:
+- `templates/companies.csv` -- Company database
+- `templates/contacts.csv` -- Contacts / founders / advisors
+- `templates/investments.csv` -- Investment records (import companies first)
+
+Edit the templates with your data, or have an AI generate CSVs from your existing spreadsheets using these templates as a reference.
+
+---
+
 ## Deployment
 
 ### Vercel (Recommended)
@@ -277,9 +282,10 @@ Modify the stage constraint in your database and update the `CompanyStage` type 
 ### Commands
 
 ```bash
-pnpm init-fund    # Interactive setup wizard (branding, modules)
-pnpm db:setup     # Connect to Supabase and run all migrations
-pnpm create-user  # Create a new user (auth + CRM profile)
+pnpm init-fund    # Full setup wizard (branding, modules, DB, user, import)
+pnpm import-data  # Import companies, contacts, or investments from CSV
+pnpm db:setup     # Re-run database migrations (standalone)
+pnpm create-user  # Add another user (auth + CRM profile)
 pnpm dev          # Start development server (port 3001)
 pnpm build        # Build for production
 pnpm typecheck    # Run TypeScript type checking

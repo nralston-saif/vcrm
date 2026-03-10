@@ -5,12 +5,25 @@ import pc from 'picocolors'
 import fs from 'node:fs'
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
+import pg from 'pg'
+
+const { Client } = pg
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url))
 const ROOT = path.resolve(__dirname, '..')
 const CRM_DIR = path.join(ROOT, 'apps', 'crm')
 const CONFIG_PATH = path.join(CRM_DIR, 'fund.config.ts')
 const ENV_PATH = path.join(CRM_DIR, '.env.local')
+const MIGRATIONS_DIR = path.join(ROOT, 'supabase', 'migrations')
+
+const MIGRATION_FILES = [
+  '001_core_schema.sql',
+  '002_crm_tables.sql',
+  '003_tickets_meetings.sql',
+  '004_notifications_audit.sql',
+  '005_stats_functions.sql',
+  '006_storage.sql',
+]
 
 const MODULES = [
   { value: 'deals', label: 'Deal Pipeline', hint: 'Application intake, voting, deliberations' },
@@ -24,7 +37,6 @@ const MODULES = [
   { value: 'sms', label: 'SMS Notifications', hint: 'Requires Twilio account' },
 ]
 
-// Modules enabled by default
 const DEFAULT_ENABLED = ['deals', 'portfolio', 'tickets', 'meetings', 'notifications', 'news']
 
 function validateSupabaseUrl(v) {
@@ -39,6 +51,10 @@ function validateKey(label) {
     if (v.length < 100) return `Key looks truncated (${v.length} chars). Try pasting again.`
     return undefined
   }
+}
+
+function escapeQuotes(str) {
+  return str.replace(/'/g, "\\'")
 }
 
 async function main() {
@@ -59,7 +75,10 @@ async function main() {
     }
   }
 
-  // Fund branding
+  // ── Step 1: Fund Branding ──────────────────────────────────────────────
+
+  p.log.step(pc.cyan('Step 1 of 4: Fund Branding'))
+
   const branding = await p.group(
     {
       name: () =>
@@ -98,7 +117,10 @@ async function main() {
     }
   )
 
-  // Module selection
+  // ── Step 2: Module Selection ───────────────────────────────────────────
+
+  p.log.step(pc.cyan('Step 2 of 4: Modules'))
+
   const selectedModules = await p.multiselect({
     message: 'Which modules do you want to enable? (space to toggle, enter to confirm)',
     options: MODULES.map((m) => ({
@@ -117,10 +139,14 @@ async function main() {
 
   const enabledSet = new Set(selectedModules)
 
-  // Supabase credentials (using password prompts to handle long keys)
+  // ── Step 3: Supabase Credentials ───────────────────────────────────────
+
+  p.log.step(pc.cyan('Step 3 of 4: Supabase Configuration'))
+
   let supabaseUrl = ''
   let anonKey = ''
   let serviceRoleKey = ''
+  let dbPassword = ''
   let liveblocksKey = ''
   let anthropicKey = ''
   let twilioSid = ''
@@ -128,7 +154,6 @@ async function main() {
   let twilioPhone = ''
 
   if (!skipEnv) {
-    p.log.step(pc.cyan('Supabase Configuration'))
     p.log.message(`${pc.dim('Find these in your Supabase dashboard → Settings → API')}`)
 
     supabaseUrl = await p.text({
@@ -172,9 +197,23 @@ async function main() {
       twilioToken = await p.password({ message: 'Twilio Auth Token' }) || ''
       twilioPhone = await p.text({ message: 'Twilio Phone Number', placeholder: '+1234567890' }) || ''
     }
+  } else {
+    // Read existing env for database and API steps
+    const env = readEnvFile(ENV_PATH)
+    supabaseUrl = env.NEXT_PUBLIC_SUPABASE_URL || ''
+    serviceRoleKey = env.SUPABASE_SERVICE_ROLE_KEY || ''
   }
 
-  // Generate fund.config.ts
+  // Database password (always needed for migrations)
+  p.log.message(`${pc.dim('This is the password shown when you created the Supabase project')}`)
+  dbPassword = await p.password({
+    message: 'Supabase database password',
+    validate: (v) => (!v || v.length === 0 ? 'Database password is required' : undefined),
+  })
+  if (p.isCancel(dbPassword)) { p.cancel('Setup cancelled.'); process.exit(0) }
+
+  // ── Write Config Files ─────────────────────────────────────────────────
+
   const s = p.spinner()
   s.start('Writing configuration')
 
@@ -303,25 +342,270 @@ SUPABASE_SERVICE_ROLE_KEY=${serviceRoleKey}
     )
   }
 
+  // ── Step 3b: Run Database Migrations ───────────────────────────────────
+
+  p.log.step(pc.cyan('Running database migrations'))
+
+  const projectRef = supabaseUrl.replace('https://', '').replace('.supabase.co', '')
+  const connectionString = `postgresql://postgres:${encodeURIComponent(dbPassword)}@db.${projectRef}.supabase.co:5432/postgres`
+
+  const client = new Client({ connectionString, ssl: { rejectUnauthorized: false } })
+
+  s.start('Connecting to database')
+  try {
+    await client.connect()
+    s.stop('Connected to database')
+  } catch (err) {
+    s.stop('Connection failed')
+    p.log.error(
+      `Could not connect to database.\n\n` +
+        `${pc.dim('Error: ' + err.message)}\n\n` +
+        `Make sure your database password is correct.\n` +
+        `You can find or reset it in: ${pc.cyan(`https://supabase.com/dashboard/project/${projectRef}/settings/database`)}`
+    )
+    process.exit(1)
+  }
+
+  // Check for missing migration files
+  const missingFiles = MIGRATION_FILES.filter(
+    (f) => !fs.existsSync(path.join(MIGRATIONS_DIR, f))
+  )
+  if (missingFiles.length > 0) {
+    p.log.error(
+      'Missing migration files:\n' +
+        missingFiles.map((f) => `  ${pc.red('•')} ${f}`).join('\n')
+    )
+    await client.end()
+    process.exit(1)
+  }
+
+  let completed = 0
+  for (const file of MIGRATION_FILES) {
+    s.start(`Running ${pc.cyan(file)} (${completed + 1}/${MIGRATION_FILES.length})`)
+
+    const sql = fs.readFileSync(path.join(MIGRATIONS_DIR, file), 'utf-8')
+
+    try {
+      await client.query(sql)
+      completed++
+      s.stop(`${pc.green('✓')} ${file}`)
+    } catch (err) {
+      s.stop(`${pc.red('✗')} ${file}`)
+      p.log.error(
+        `Migration failed on ${pc.cyan(file)}:\n` +
+          `${pc.dim(err.message)}\n\n` +
+          `${completed} of ${MIGRATION_FILES.length} migrations completed before the error.`
+      )
+      await client.end()
+      process.exit(1)
+    }
+  }
+
+  await client.end()
+
+  p.log.success(pc.green(`All ${MIGRATION_FILES.length} migrations applied!`))
+
+  // ── Step 4: Create First User ──────────────────────────────────────────
+
+  p.log.step(pc.cyan('Step 4 of 4: Create Your First User'))
+
+  const user = await p.group(
+    {
+      email: () =>
+        p.text({
+          message: 'Email address',
+          placeholder: 'you@yourfund.com',
+          validate: (v) => {
+            if (!v) return 'Email is required'
+            if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v)) return 'Enter a valid email'
+          },
+        }),
+      password: () =>
+        p.password({
+          message: 'Password',
+          validate: (v) => {
+            if (!v) return 'Password is required'
+            if (v.length < 8) return 'Password must be at least 8 characters'
+          },
+        }),
+      firstName: () =>
+        p.text({
+          message: 'First name',
+          validate: (v) => { if (!v) return 'First name is required' },
+        }),
+      lastName: () =>
+        p.text({
+          message: 'Last name',
+          validate: (v) => { if (!v) return 'Last name is required' },
+        }),
+    },
+    {
+      onCancel: () => {
+        p.cancel('Setup cancelled.')
+        process.exit(0)
+      },
+    }
+  )
+
+  // Use the service role key we already have (from prompts or env file)
+  const srkToUse = skipEnv ? serviceRoleKey : serviceRoleKey
+
+  s.start('Creating auth user')
+  const authRes = await fetch(`${supabaseUrl}/auth/v1/admin/users`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      apikey: srkToUse,
+      Authorization: `Bearer ${srkToUse}`,
+    },
+    body: JSON.stringify({
+      email: user.email,
+      password: user.password,
+      email_confirm: true,
+    }),
+  })
+
+  if (!authRes.ok) {
+    const err = await authRes.json().catch(() => ({}))
+    s.stop('Failed')
+    p.log.error(`Auth error: ${err.msg || err.message || authRes.statusText}`)
+    process.exit(1)
+  }
+
+  const authUser = await authRes.json()
+  s.stop('Auth user created')
+
+  // Insert people record
+  s.start('Creating CRM profile')
+  const fullName = `${user.firstName} ${user.lastName}`
+
+  const insertRes = await fetch(`${supabaseUrl}/rest/v1/people`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      apikey: srkToUse,
+      Authorization: `Bearer ${srkToUse}`,
+      Prefer: 'return=representation',
+    },
+    body: JSON.stringify({
+      auth_user_id: authUser.id,
+      email: user.email,
+      first_name: user.firstName,
+      last_name: user.lastName,
+      name: fullName,
+      role: 'partner',
+    }),
+  })
+
+  if (!insertRes.ok) {
+    const err = await insertRes.json().catch(() => ({}))
+    s.stop('Failed')
+    p.log.error(`Profile error: ${err.message || insertRes.statusText}`)
+    // Roll back auth user
+    await fetch(`${supabaseUrl}/auth/v1/admin/users/${authUser.id}`, {
+      method: 'DELETE',
+      headers: { apikey: srkToUse, Authorization: `Bearer ${srkToUse}` },
+    }).catch(() => {})
+    p.log.warning('Rolled back auth user.')
+    process.exit(1)
+  }
+
+  s.stop('CRM profile created')
+
+  // ── Optional: Data Import ───────────────────────────────────────────────
+
+  p.log.success(pc.green('Core setup complete!'))
+
+  const wantImport = await p.confirm({
+    message: 'Do you have existing data (companies, contacts, investments) to import?',
+    initialValue: false,
+  })
+
+  if (!p.isCancel(wantImport) && wantImport) {
+    p.note(
+      [
+        `CSV templates are in the ${pc.cyan('templates/')} folder:`,
+        '',
+        `  ${pc.cyan('templates/companies.csv')}   — Company database`,
+        `  ${pc.cyan('templates/contacts.csv')}    — People / founders`,
+        `  ${pc.cyan('templates/investments.csv')} — Investment records`,
+        '',
+        `Edit the templates with your data (or have an AI`,
+        `generate them from your spreadsheets), then run:`,
+        '',
+        `  ${pc.cyan('pnpm import-data')}`,
+      ].join('\n'),
+      'Data Import'
+    )
+  }
+
+  // ── Webhook Setup Guidance ─────────────────────────────────────────────
+
+  if (enabledSet.has('deals')) {
+    const wantWebhook = await p.confirm({
+      message: 'Do you want to set up the deal application webhook now?',
+      initialValue: false,
+    })
+
+    if (!p.isCancel(wantWebhook) && wantWebhook) {
+      p.note(
+        [
+          `The CRM accepts deal applications via webhook from any`,
+          `form provider (JotForm, Typeform, Google Forms, etc.).`,
+          '',
+          `${pc.cyan('1.')} Create your application form with fields for:`,
+          `   company name, website, description, founder names,`,
+          `   founder linkedins, email, previous funding, deck link`,
+          '',
+          `${pc.cyan('2.')} Point your form's webhook URL to:`,
+          `   ${pc.cyan('https://your-domain.com/api/webhook/jotform')}`,
+          `   ${pc.dim('(works with any provider, not just JotForm)')}`,
+          '',
+          `${pc.cyan('3.')} Update the field mapping in ${pc.cyan('fund.config.ts')}:`,
+          `   Edit ${pc.cyan('webhookFieldMap')} to match your form's field IDs.`,
+          `   Each key maps a CRM field to your form's field name.`,
+          '',
+          `${pc.dim('For local testing, use a tunnel like ngrok:')}`,
+          `   ${pc.dim('npx ngrok http 3001')}`,
+        ].join('\n'),
+        'Webhook Setup'
+      )
+    }
+  }
+
+  // ── Done ───────────────────────────────────────────────────────────────
+
   p.note(
     [
-      `${pc.cyan('Next steps:')}`,
+      `${pc.bold('Email:')}     ${user.email}`,
+      `${pc.bold('Name:')}      ${fullName}`,
       '',
-      `1. Set up the database: ${pc.cyan('pnpm db:setup')}`,
-      `   ${pc.dim('Connects to your database and runs all migrations')}`,
+      `Start the dev server: ${pc.cyan('pnpm dev')}`,
+      `Then open ${pc.cyan('http://localhost:3001')} and log in.`,
       '',
-      `2. Create your first user: ${pc.cyan('pnpm create-user')}`,
-      '',
-      `3. Start the dev server: ${pc.cyan('pnpm dev')}`,
+      `${pc.dim('Other commands:')}`,
+      `  ${pc.cyan('pnpm import-data')}   — Import companies, contacts, investments`,
+      `  ${pc.cyan('pnpm create-user')}   — Add another team member`,
     ].join('\n'),
-    'Almost there!'
+    'You\'re ready!'
   )
 
   p.outro(pc.green('Setup complete!'))
 }
 
-function escapeQuotes(str) {
-  return str.replace(/'/g, "\\'")
+function readEnvFile(filePath) {
+  const content = fs.readFileSync(filePath, 'utf-8')
+  const env = {}
+  for (const line of content.split('\n')) {
+    const trimmed = line.trim()
+    if (!trimmed || trimmed.startsWith('#')) continue
+    const eqIndex = trimmed.indexOf('=')
+    if (eqIndex === -1) continue
+    const key = trimmed.slice(0, eqIndex).trim()
+    const value = trimmed.slice(eqIndex + 1).trim()
+    if (value) env[key] = value
+  }
+  return env
 }
 
 main().catch((err) => {

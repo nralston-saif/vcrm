@@ -1579,6 +1579,15 @@ export default function DealsClient({
         <CreateTicketButton currentUserId={userId} />
       </div>
 
+      {/* Tabs */}
+      <div className="border-b border-gray-200 mb-3">
+        <nav className="-mb-px flex gap-4">
+          {renderTabButton('application', 'Applications', votingCount)}
+          {renderTabButton('interview', 'Interviews', deliberationCount)}
+          {renderTabButton('archive', 'Archive', archiveCount)}
+        </nav>
+      </div>
+
       {hasNoDeals ? (
         <div className="bg-white rounded-lg shadow-sm border border-gray-100 p-12 text-center">
           <div className="flex justify-center mb-4">
@@ -1591,14 +1600,6 @@ export default function DealsClient({
         </div>
       ) : (
       <>
-      {/* Tabs */}
-      <div className="border-b border-gray-200 mb-3">
-        <nav className="-mb-px flex gap-4">
-          {renderTabButton('application', 'Applications', votingCount)}
-          {renderTabButton('interview', 'Interviews', deliberationCount)}
-          {renderTabButton('archive', 'Archive', archiveCount)}
-        </nav>
-      </div>
 
       {/* ============================================ */}
       {/* VOTING TAB */}

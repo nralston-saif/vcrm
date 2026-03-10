@@ -1,0 +1,5 @@
+first_name,last_name,email,title,role,linkedin_url,mobile_phone,location,tags
+Jane,Smith,jane@acme-ai.com,CEO & Co-Founder,founder,https://linkedin.com/in/janesmith,+14155551234,San Francisco,"founder,ai"
+Bob,Johnson,bob@cloudstack.io,CTO,founder,https://linkedin.com/in/bobjohnson,,Austin,"founder,technical"
+Alice,Chen,alice@neurabio.com,CEO,founder,https://linkedin.com/in/alicechen,+16175559876,Boston,"founder,biotech"
+Tom,Williams,tom@lp-capital.com,Managing Director,investor,https://linkedin.com/in/tomwilliams,,New York,"lp,investor"

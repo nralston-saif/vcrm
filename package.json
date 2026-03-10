@@ -11,7 +11,8 @@
     "format": "prettier --write \"**/*.{ts,tsx,md}\"",
     "init-fund": "node scripts/setup.mjs",
     "create-user": "node scripts/create-user.mjs",
-    "db:setup": "node scripts/db-setup.mjs"
+    "db:setup": "node scripts/db-setup.mjs",
+    "import-data": "node scripts/import-data.mjs"
   },
   "devDependencies": {
     "@clack/prompts": "^1.1.0",

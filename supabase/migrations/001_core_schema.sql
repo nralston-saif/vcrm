@@ -31,6 +31,8 @@ CREATE TABLE people (
   first_met_date DATE,
   introduced_by UUID REFERENCES people(id) ON DELETE SET NULL,
   introduction_context TEXT,
+  role TEXT DEFAULT 'contact',
+  status TEXT DEFAULT 'active',
   relationship_notes TEXT,
   created_at TIMESTAMPTZ DEFAULT NOW(),
   updated_at TIMESTAMPTZ DEFAULT NOW()

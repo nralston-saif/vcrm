@@ -1,0 +1,4 @@
+name,short_description,website,industry,city,country,founded_year,stage,tags
+Acme AI,"AI-powered analytics platform for enterprise",https://acme-ai.com,AI/ML,San Francisco,US,2022,prospect,"ai,analytics,enterprise"
+CloudStack Labs,"Cloud infrastructure management tools",https://cloudstack.io,Infrastructure,Austin,US,2021,portfolio,"cloud,devtools"
+NeuraBio,"Drug discovery using machine learning",https://neurabio.com,Biotech,Boston,US,2023,prospect,"biotech,ml,drug-discovery"

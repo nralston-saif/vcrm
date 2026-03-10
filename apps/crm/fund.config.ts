@@ -7,13 +7,13 @@
 
 export const fundConfig = {
   /** Your fund's full name (shown in metadata, emails, etc.) */
-  name: 'Your Fund Name',
+  name: 'Nicks Fund',
 
   /** Short name or abbreviation */
-  shortName: 'YFN',
+  shortName: 'NF',
 
   /** One-line description of your fund */
-  tagline: '',
+  tagline: 'Building Stuff',
 
   /** Support email shown in error messages */
   supportEmail: '',
@@ -28,7 +28,7 @@ export const fundConfig = {
      * Each part can have a different font weight.
      */
     logo: [
-      { text: 'YFN', weight: 'bold' as const },
+      { text: 'NF', weight: 'bold' as const },
     ],
 
     /** Primary brand color (used for accents, buttons, etc.) */

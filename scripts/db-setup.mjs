@@ -88,7 +88,7 @@ async function main() {
   const s = p.spinner()
   s.start('Connecting to database')
 
-  const connectionString = `postgresql://postgres.${projectRef}:${encodeURIComponent(dbPassword)}@aws-0-us-east-1.pooler.supabase.com:6543/postgres`
+  const connectionString = `postgresql://postgres:${encodeURIComponent(dbPassword)}@db.${projectRef}.supabase.co:5432/postgres`
 
   const client = new Client({ connectionString, ssl: { rejectUnauthorized: false } })
 

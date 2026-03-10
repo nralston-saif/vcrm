@@ -153,6 +153,7 @@ const insertRes = await fetch(`${SUPABASE_URL}/rest/v1/people`, {
     first_name: answers.firstName,
     last_name: answers.lastName,
     name: fullName,
+    role: 'partner',
   }),
 });
 

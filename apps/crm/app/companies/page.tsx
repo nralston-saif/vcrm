@@ -89,13 +89,7 @@ export default async function CompaniesPage() {
 
       {/* Main Content */}
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        {typedCompanies.length === 0 ? (
-          <div className="text-center py-12">
-            <p className="text-gray-500">No companies found</p>
-          </div>
-        ) : (
-          <CompanyGrid companies={typedCompanies} isPartner={true} userId={person.id} />
-        )}
+        <CompanyGrid companies={typedCompanies} isPartner={true} userId={person.id} />
       </main>
     </div>
   )
