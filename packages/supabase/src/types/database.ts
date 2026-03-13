@@ -131,7 +131,7 @@ export interface Database {
           logo_url: string | null
           industry: string | null
           founded_year: number | null
-          is_aisafety_company: boolean
+
           yc_batch: string | null
           city: string | null
           country: string | null
@@ -152,7 +152,7 @@ export interface Database {
           logo_url?: string | null
           industry?: string | null
           founded_year?: number | null
-          is_aisafety_company?: boolean
+
           yc_batch?: string | null
           city?: string | null
           country?: string | null
@@ -173,7 +173,7 @@ export interface Database {
           logo_url?: string | null
           industry?: string | null
           founded_year?: number | null
-          is_aisafety_company?: boolean
+
           yc_batch?: string | null
           city?: string | null
           country?: string | null
@@ -508,60 +508,6 @@ export interface Database {
           }
         ]
       }
-      legacy_investments: {
-        Row: {
-          id: string
-          company_name: string
-          founders: string | null
-          description: string | null
-          website: string | null
-          amount: number | null
-          investment_date: string | null
-          terms: string | null
-          other_funders: string | null
-          contact_name: string | null
-          contact_email: string | null
-          notes: string | null
-          stealthy: boolean
-          created_at: string
-          updated_at: string
-        }
-        Insert: {
-          id?: string
-          company_name: string
-          founders?: string | null
-          description?: string | null
-          website?: string | null
-          amount?: number | null
-          investment_date?: string | null
-          terms?: string | null
-          other_funders?: string | null
-          contact_name?: string | null
-          contact_email?: string | null
-          notes?: string | null
-          stealthy?: boolean
-          created_at?: string
-          updated_at?: string
-        }
-        Update: {
-          id?: string
-          company_name?: string
-          founders?: string | null
-          description?: string | null
-          website?: string | null
-          amount?: number | null
-          investment_date?: string | null
-          terms?: string | null
-          other_funders?: string | null
-          contact_name?: string | null
-          contact_email?: string | null
-          notes?: string | null
-          stealthy?: boolean
-          created_at?: string
-          updated_at?: string
-        }
-        Relationships: []
-      }
       application_notes: {
         Row: {
           id: string
@@ -637,7 +583,7 @@ export interface Database {
           {
             foreignKeyName: "investment_notes_investment_id_fkey"
             columns: ["investment_id"]
-            referencedRelation: "legacy_investments"
+            referencedRelation: "investments"
             referencedColumns: ["id"]
           },
           {
@@ -973,7 +919,7 @@ export type MeetingNote = Database['public']['Tables']['meeting_notes']['Row']
 export type Application = Database['public']['Tables']['applications']['Row']
 export type Vote = Database['public']['Tables']['votes']['Row']
 export type Deliberation = Database['public']['Tables']['deliberations']['Row']
-export type CrmInvestment = Database['public']['Tables']['legacy_investments']['Row']
+export type CrmInvestment = Database['public']['Tables']['investments']['Row']
 export type InvestmentNote = Database['public']['Tables']['investment_notes']['Row']
 export type PeopleNote = Database['public']['Tables']['people_notes']['Row']
 export type CompanyNote = Database['public']['Tables']['company_notes']['Row']

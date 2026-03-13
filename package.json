@@ -12,7 +12,8 @@
     "init-fund": "node scripts/setup.mjs",
     "create-user": "node scripts/create-user.mjs",
     "db:setup": "node scripts/db-setup.mjs",
-    "import-data": "node scripts/import-data.mjs"
+    "import-data": "node scripts/import-data.mjs",
+    "doctor": "node scripts/doctor.mjs"
   },
   "devDependencies": {
     "@clack/prompts": "^1.1.0",

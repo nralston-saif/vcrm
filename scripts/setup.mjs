@@ -281,15 +281,15 @@ ${moduleEntries}
    * Update these keys to match your form's field names/IDs.
    */
   webhookFieldMap: {
-    companyName: 'q29_companyName',
-    website: 'q31_websiteif',
-    companyDescription: 'q30_companyDescription',
-    founderNames: 'q26_typeA',
-    founderLinkedins: 'q28_founderLinkedins',
-    founderBios: 'q40_founderBios',
-    primaryEmail: 'q32_primaryEmail',
-    previousFunding: 'q35_haveYou',
-    deckLink: 'q41_linkTo',
+    companyName: 'YOUR_COMPANY_NAME_FIELD',
+    website: 'YOUR_WEBSITE_FIELD',
+    companyDescription: 'YOUR_DESCRIPTION_FIELD',
+    founderNames: 'YOUR_FOUNDER_NAMES_FIELD',
+    founderLinkedins: 'YOUR_FOUNDER_LINKEDINS_FIELD',
+    founderBios: 'YOUR_FOUNDER_BIOS_FIELD',
+    primaryEmail: 'YOUR_EMAIL_FIELD',
+    previousFunding: 'YOUR_PREVIOUS_FUNDING_FIELD',
+    deckLink: 'YOUR_DECK_LINK_FIELD',
   },
 } as const
 
@@ -552,7 +552,8 @@ SUPABASE_SERVICE_ROLE_KEY=${serviceRoleKey}
       p.note(
         [
           `The CRM accepts deal applications via webhook from any`,
-          `form provider (JotForm, Typeform, Google Forms, etc.).`,
+          `form provider (Typeform, Google Forms, Tally, JotForm, etc.).`,
+          `It supports both JSON and form-encoded payloads.`,
           '',
           `${pc.cyan('1.')} Create your application form with fields for:`,
           `   company name, website, description, founder names,`,
@@ -562,12 +563,15 @@ SUPABASE_SERVICE_ROLE_KEY=${serviceRoleKey}
           `   ${pc.cyan('https://your-domain.com/api/webhook/jotform')}`,
           `   ${pc.dim('(works with any provider, not just JotForm)')}`,
           '',
-          `${pc.cyan('3.')} Update the field mapping in ${pc.cyan('fund.config.ts')}:`,
-          `   Edit ${pc.cyan('webhookFieldMap')} to match your form's field IDs.`,
-          `   Each key maps a CRM field to your form's field name.`,
+          `${pc.cyan('3.')} Set a ${pc.cyan('WEBHOOK_SECRET')} in your .env.local and configure`,
+          `   your form to send it in the ${pc.cyan('X-Webhook-Secret')} header.`,
           '',
-          `${pc.dim('For local testing, use a tunnel like ngrok:')}`,
-          `   ${pc.dim('npx ngrok http 3001')}`,
+          `${pc.cyan('4.')} Update the field mapping in ${pc.cyan('fund.config.ts')}:`,
+          `   Edit ${pc.cyan('webhookFieldMap')} to match your form's field IDs.`,
+          `   Replace the ${pc.yellow('YOUR_*')} placeholders with your actual field names.`,
+          '',
+          `${pc.dim('See README.md for provider-specific examples.')}`,
+          `${pc.dim('For local testing, use a tunnel: npx ngrok http 3001')}`,
         ].join('\n'),
         'Webhook Setup'
       )

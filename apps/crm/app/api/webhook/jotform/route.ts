@@ -2,6 +2,7 @@ import { createClient } from '@supabase/supabase-js'
 import { NextRequest, NextResponse } from 'next/server'
 import { notifyNewApplication } from '@/lib/notifications'
 import { checkRateLimit, getClientIP } from '@/lib/rate-limit'
+import { fundConfig } from '@/fund.config'
 
 const RATE_LIMIT_WINDOW = 60 * 1000
 const RATE_LIMIT_MAX = 10
@@ -66,7 +67,6 @@ async function findOrCreateCompany(
       short_description: description,
       stage: 'prospect',
       is_active: true,
-      is_aisafety_company: false,
     })
     .select('id')
     .single()
@@ -106,35 +106,50 @@ export async function POST(request: NextRequest) {
 
   try {
 
-    console.log('Received JotForm webhook - v8 with header authentication')
+    console.log('Received webhook submission')
 
-    const formData = await request.formData()
-    console.log('FormData keys received:', Array.from(formData.keys()))
-
-    const rawRequest = formData.get('rawRequest')
-    const pretty = formData.get('pretty')
+    const contentType = request.headers.get('content-type') || ''
     let submissionData: Record<string, unknown> = {}
 
-    if (rawRequest && typeof rawRequest === 'string') {
-      try {
-        submissionData = JSON.parse(rawRequest)
-      } catch {
-        console.error('Failed to parse rawRequest')
-      }
-    }
+    // Support both JSON and form-encoded payloads
+    if (contentType.includes('application/json')) {
+      submissionData = await request.json()
+    } else {
+      const formData = await request.formData()
+      console.log('FormData keys received:', Array.from(formData.keys()))
 
-    if (pretty && typeof pretty === 'string') {
-      try {
-        const prettyData = JSON.parse(pretty)
-        if (prettyData.answers) {
-          submissionData = prettyData
+      const rawRequest = formData.get('rawRequest')
+      const pretty = formData.get('pretty')
+
+      if (rawRequest && typeof rawRequest === 'string') {
+        try {
+          submissionData = JSON.parse(rawRequest)
+        } catch {
+          console.error('Failed to parse rawRequest')
         }
-      } catch {
-        console.error('Failed to parse pretty')
+      }
+
+      if (pretty && typeof pretty === 'string') {
+        try {
+          const prettyData = JSON.parse(pretty)
+          if (prettyData.answers) {
+            submissionData = prettyData
+          }
+        } catch {
+          console.error('Failed to parse pretty')
+        }
+      }
+
+      // Also check top-level form fields
+      for (const [key, value] of formData.entries()) {
+        if (!submissionData[key] && typeof value === 'string') {
+          submissionData[key] = value
+        }
       }
     }
 
     function getFormField(key: string): string | null {
+      // Check JotForm-style nested answers
       const answers = submissionData.answers as Record<string, unknown> | undefined
       if (answers?.[key]) {
         const answer = answers[key]
@@ -146,6 +161,7 @@ export async function POST(request: NextRequest) {
         return trimmed || null
       }
 
+      // Check top-level fields (Typeform, Google Forms, custom webhooks)
       if (submissionData[key]) {
         const trimmed = String(submissionData[key]).trim()
         return trimmed || null
@@ -154,9 +170,10 @@ export async function POST(request: NextRequest) {
       return null
     }
 
-    const companyName = getFormField('q29_companyName') || 'Unknown Company'
-    const website = getFormField('q31_websiteif')
-    const companyDescription = getFormField('q30_companyDescription')
+    const fieldMap = fundConfig.webhookFieldMap
+    const companyName = getFormField(fieldMap.companyName) || 'Unknown Company'
+    const website = getFormField(fieldMap.website)
+    const companyDescription = getFormField(fieldMap.companyDescription)
 
     let companyId: string | null = null
     try {
@@ -165,18 +182,18 @@ export async function POST(request: NextRequest) {
       console.error('Failed to find/create company, proceeding without company_id:', err)
     }
     const application = {
-      submission_id: submissionData.submission_id || formData.get('submissionID') || Date.now().toString(),
+      submission_id: submissionData.submission_id || submissionData.submissionID || Date.now().toString(),
       submitted_at: submissionData.created_at || new Date().toISOString(),
       company_name: companyName,
       company_id: companyId,
-      founder_names: getFormField('q26_typeA'),
-      founder_linkedins: getFormField('q28_founderLinkedins'),
-      founder_bios: getFormField('q40_founderBios'),
-      primary_email: getFormField('q32_primaryEmail'),
+      founder_names: getFormField(fieldMap.founderNames),
+      founder_linkedins: getFormField(fieldMap.founderLinkedins),
+      founder_bios: getFormField(fieldMap.founderBios),
+      primary_email: getFormField(fieldMap.primaryEmail),
       company_description: companyDescription,
       website,
-      previous_funding: getFormField('q35_haveYou'),
-      deck_link: getFormField('q41_linkTo'),
+      previous_funding: getFormField(fieldMap.previousFunding),
+      deck_link: getFormField(fieldMap.deckLink),
       stage: 'new',
       votes_revealed: false,
       all_votes_in: false,

@@ -80,15 +80,15 @@ export const fundConfig = {
    * Update these keys to match your form's field names/IDs.
    */
   webhookFieldMap: {
-    companyName: 'q29_companyName',
-    website: 'q31_websiteif',
-    companyDescription: 'q30_companyDescription',
-    founderNames: 'q26_typeA',
-    founderLinkedins: 'q28_founderLinkedins',
-    founderBios: 'q40_founderBios',
-    primaryEmail: 'q32_primaryEmail',
-    previousFunding: 'q35_haveYou',
-    deckLink: 'q41_linkTo',
+    companyName: 'YOUR_COMPANY_NAME_FIELD',
+    website: 'YOUR_WEBSITE_FIELD',
+    companyDescription: 'YOUR_DESCRIPTION_FIELD',
+    founderNames: 'YOUR_FOUNDER_NAMES_FIELD',
+    founderLinkedins: 'YOUR_FOUNDER_LINKEDINS_FIELD',
+    founderBios: 'YOUR_FOUNDER_BIOS_FIELD',
+    primaryEmail: 'YOUR_EMAIL_FIELD',
+    previousFunding: 'YOUR_PREVIOUS_FUNDING_FIELD',
+    deckLink: 'YOUR_DECK_LINK_FIELD',
   },
 } as const
 

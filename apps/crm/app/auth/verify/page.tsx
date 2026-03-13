@@ -134,13 +134,10 @@ function VerifyContent() {
           >
             Try logging in
           </Link>
-          <Link
-            href="/signup"
-            className="inline-flex items-center justify-center px-6 py-3 border border-gray-300 text-base font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50"
-          >
-            Try signing up again
-          </Link>
         </div>
+        <p className="text-sm text-gray-500">
+          Need an account? Ask a team member to invite you.
+        </p>
       </div>
     </div>
   )

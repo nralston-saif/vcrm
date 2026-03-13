@@ -64,8 +64,8 @@ export default async function PortfolioPage() {
   const companyIds = [...new Set(investments?.map(inv => inv.company_id) || [])]
   const applicationIds = applications?.map(app => app.id) || []
 
-  // STEP 2: Fetch companyPeople, meetingNotes, and publishedCompanies in parallel
-  const [{ data: companyPeople }, { data: meetingNotes }, { data: publishedCompanies }] = await Promise.all([
+  // STEP 2: Fetch companyPeople and meetingNotes in parallel
+  const [{ data: companyPeople }, { data: meetingNotes }] = await Promise.all([
     supabase
       .from('company_people')
       .select(`
@@ -88,10 +88,6 @@ export default async function PortfolioPage() {
       .from('application_notes')
       .select('id, application_id, content, meeting_date, created_at, user_id')
       .in('application_id', applicationIds),
-    supabase
-      .from('website_portfolio_companies')
-      .select('company_id')
-      .in('company_id', companyIds)
   ])
 
   // STEP 3: Fetch notePeople (depends on meetingNotes)
@@ -164,7 +160,7 @@ export default async function PortfolioPage() {
     }
   })
 
-  const publishedSet = new Set(publishedCompanies?.map(p => p.company_id) || [])
+  const publishedSet = new Set<string>()
 
   // Transform partners for dropdown
   const partnersList = partners?.map(p => ({
