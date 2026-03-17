@@ -347,10 +347,11 @@ SUPABASE_SERVICE_ROLE_KEY=${serviceRoleKey}
 
   p.log.step(pc.cyan('Running database migrations'))
 
-  const projectRef = supabaseUrl.replace('https://', '').replace('.supabase.co', '')
-  const connectionString = `postgresql://postgres:${encodeURIComponent(dbPassword)}@db.${projectRef}.supabase.co:5432/postgres`
+  const projectRef = supabaseUrl.replace('https://', '').replace(/\.supabase\.co\/?$/, '')
 
-  const client = new Client({ connectionString, ssl: { rejectUnauthorized: false } })
+  // Try direct connection first, fall back to pooler if hostname doesn't resolve
+  let connectionString = `postgresql://postgres:${encodeURIComponent(dbPassword)}@db.${projectRef}.supabase.co:5432/postgres`
+  let client = new Client({ connectionString, ssl: { rejectUnauthorized: false } })
 
   s.start('Connecting to database')
   try {
@@ -358,13 +359,53 @@ SUPABASE_SERVICE_ROLE_KEY=${serviceRoleKey}
     s.stop('Connected to database')
   } catch (err) {
     s.stop('Connection failed')
-    p.log.error(
-      `Could not connect to database.\n\n` +
-        `${pc.dim('Error: ' + err.message)}\n\n` +
-        `Make sure your database password is correct.\n` +
-        `You can find or reset it in: ${pc.cyan(`https://supabase.com/dashboard/project/${projectRef}/settings/database`)}`
-    )
-    process.exit(1)
+
+    if (err.message && err.message.includes('ENOTFOUND')) {
+      p.log.warning(
+        `Direct database host not available for this project.\n` +
+        `${pc.dim('Newer Supabase projects use the connection pooler instead.')}`
+      )
+      p.log.message(
+        `${pc.dim('Find it in: Supabase Dashboard → Project Settings → Database → Connection string → URI')}\n` +
+        `${pc.dim('Choose "Session mode" (port 5432). Copy the host part only (e.g. aws-0-us-east-1.pooler.supabase.com)')}`
+      )
+
+      const poolerHost = await p.text({
+        message: 'Paste your connection pooler host from the Supabase dashboard',
+        placeholder: 'aws-0-us-east-1.pooler.supabase.com',
+        validate: (v) => {
+          if (!v) return 'Host is required'
+          if (!v.includes('pooler.supabase.com') && !v.includes('supabase.')) return 'Should be a Supabase database host'
+        },
+      })
+      if (p.isCancel(poolerHost)) { p.cancel('Setup cancelled.'); process.exit(0) }
+
+      connectionString = `postgresql://postgres.${projectRef}:${encodeURIComponent(dbPassword)}@${poolerHost}:5432/postgres`
+      client = new Client({ connectionString, ssl: { rejectUnauthorized: false } })
+
+      s.start('Connecting via pooler')
+      try {
+        await client.connect()
+        s.stop('Connected to database')
+      } catch (err2) {
+        s.stop('Connection failed')
+        p.log.error(
+          `Could not connect to database.\n\n` +
+            `${pc.dim('Error: ' + err2.message)}\n\n` +
+            `Make sure your database password is correct.\n` +
+            `You can find or reset it in: ${pc.cyan(`https://supabase.com/dashboard/project/${projectRef}/settings/database`)}`
+        )
+        process.exit(1)
+      }
+    } else {
+      p.log.error(
+        `Could not connect to database.\n\n` +
+          `${pc.dim('Error: ' + err.message)}\n\n` +
+          `Make sure your database password is correct.\n` +
+          `You can find or reset it in: ${pc.cyan(`https://supabase.com/dashboard/project/${projectRef}/settings/database`)}`
+      )
+      process.exit(1)
+    }
   }
 
   // Check for missing migration files
