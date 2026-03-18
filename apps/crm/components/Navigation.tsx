@@ -259,6 +259,12 @@ export default function Navigation({ userName, personId }: { userName: string; p
                       Settings
                     </Link>
                   )}
+                  <Link
+                    href="/import"
+                    className="block px-4 py-3 text-base md:py-2 md:text-sm text-[#666666] hover:bg-[#f5f5f5] hover:text-[#1a1a1a]"
+                  >
+                    Import Data
+                  </Link>
                   <div className="h-px bg-gray-200 my-2 md:my-1" />
                   <button
                     onClick={handleLogout}

@@ -288,42 +288,61 @@ See the [Webhook Field Mapping](#webhook-field-mapping-examples) section below f
 
 ## Deployment
 
+We use **Vercel** for deployment, but VCRM works with any hosting platform that supports Next.js (Netlify, Railway, Render, AWS Amplify, self-hosted, etc.).
+
 ### Vercel (Recommended)
 
-1. **Push your repo to GitHub**
+Vercel is the easiest option since it's made by the Next.js team. The free tier is sufficient for most funds.
+
+1. **Push your repo to GitHub** (if you haven't already)
    ```bash
    git init && git add -A && git commit -m "Initial setup"
    gh repo create your-fund/vcrm --private --push
    ```
 
-2. **Create a Vercel project**
-   - Go to [vercel.com/new](https://vercel.com/new) and click **Import Git Repository**
-   - Select your repo from the list
+2. **Sign up for Vercel** at [vercel.com](https://vercel.com) and connect your GitHub account
 
-3. **Configure build settings**
+3. **Import your repo**
+   - Go to [vercel.com/new](https://vercel.com/new) and click **Import Git Repository**
+   - Select your VCRM repo from the list
+
+4. **Configure build settings**
    - **Framework Preset**: Next.js (auto-detected)
    - **Root Directory**: click **Edit** and set to `apps/crm`
    - **Build Command**: leave as default (`next build`)
    - **Install Command**: set to `pnpm install` (Vercel detects pnpm from the lock file)
 
-4. **Add environment variables**
+5. **Add environment variables**
    - Click **Environment Variables** before deploying
    - Add each variable from your `apps/crm/.env.local` file:
      - `NEXT_PUBLIC_SUPABASE_URL` -- your Supabase project URL
-     - `NEXT_PUBLIC_SUPABASE_ANON_KEY` -- your anon/public key
-     - `SUPABASE_SERVICE_ROLE_KEY` -- your service role key
+     - `NEXT_PUBLIC_SUPABASE_ANON_KEY` -- your anon/public key (Project Settings → API Keys → Legacy API)
+     - `SUPABASE_SERVICE_ROLE_KEY` -- your service role key (same section)
      - `WEBHOOK_SECRET` -- a random string for webhook auth (generate one with `openssl rand -hex 32`)
    - Add any optional keys (Liveblocks, Anthropic, Twilio) if you enabled those modules
 
-5. **Deploy** -- click Deploy and wait for the build to complete (~2 minutes)
+6. **Deploy** -- click Deploy and wait for the build to complete (~2 minutes)
 
-6. **Set up a custom domain** (optional)
+7. **Set up a custom domain** (optional)
    - Go to your project's **Settings > Domains**
    - Add your domain and follow the DNS instructions
 
+After initial setup, Vercel automatically redeploys whenever you push to `main`. You can also configure preview deployments for pull requests.
+
+### Other Hosting Options
+
+VCRM is a standard Next.js app, so it runs anywhere Next.js does:
+
+- **Netlify** -- import your repo, set the build directory to `apps/crm`, and add environment variables
+- **Railway / Render** -- connect your repo, configure the start command as `pnpm --filter @vcrm/crm start`, and add environment variables
+- **AWS Amplify** -- import from GitHub, set the app root to `apps/crm`
+- **Self-hosted** -- run `pnpm build` then `pnpm --filter @vcrm/crm start` behind a reverse proxy (nginx, Caddy, etc.)
+
+For any platform, you'll need to set the same environment variables listed above.
+
 ### Environment Variables for Production
 
-Make sure to set all variables from `.env.example` in your hosting provider's dashboard. At minimum:
+At minimum, set these in your hosting provider's dashboard:
 
 ```
 NEXT_PUBLIC_SUPABASE_URL
