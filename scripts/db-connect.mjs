@@ -1,6 +1,6 @@
 /**
  * Shared database connection helper.
- * Tries direct host first, falls back to pooler via Supabase Management API.
+ * Tries direct host first, falls back to asking for the pooler connection string.
  */
 import * as p from '@clack/prompts'
 import pc from 'picocolors'
@@ -9,34 +9,31 @@ import pg from 'pg'
 const { Client } = pg
 
 /**
- * Fetch the pooler host for a Supabase project using the Management API.
- * Requires a Personal Access Token (PAT).
+ * Parse a Supabase pooler connection string and extract the host.
+ * Accepts either a full URI or just the host.
+ * Examples:
+ *   "postgresql://postgres.ref:pw@aws-0-us-east-1.pooler.supabase.com:5432/postgres"
+ *   "aws-0-us-east-1.pooler.supabase.com"
  */
-async function fetchPoolerHost(projectRef, accessToken) {
-  const res = await fetch(
-    `https://api.supabase.com/v1/projects/${projectRef}/config/database/pooler`,
-    { headers: { Authorization: `Bearer ${accessToken}` } }
-  )
-
-  if (!res.ok) {
-    const body = await res.text().catch(() => '')
-    throw new Error(`Supabase API error (${res.status}): ${body}`)
+function parsePoolerHost(input) {
+  const trimmed = input.trim()
+  // If it looks like a URI, extract the host
+  if (trimmed.startsWith('postgresql://') || trimmed.startsWith('postgres://')) {
+    try {
+      const url = new URL(trimmed)
+      return url.hostname
+    } catch {
+      // Fall through to return as-is
+    }
   }
-
-  const configs = await res.json()
-  // Find the PRIMARY database pooler config
-  const primary = configs.find((c) => c.database_type === 'PRIMARY') || configs[0]
-  if (!primary || !primary.db_host) {
-    throw new Error('No pooler configuration found for this project')
-  }
-
-  return primary.db_host
+  // Strip any port or path if someone pasted "host:5432"
+  return trimmed.split(':')[0].split('/')[0]
 }
 
 /**
  * Connect to a Supabase database.
- * Tries direct connection first; if ENOTFOUND, uses the Management API to
- * discover the pooler host automatically.
+ * Tries direct connection first; if ENOTFOUND, asks the user to paste
+ * their pooler connection string from the Supabase dashboard.
  *
  * @param {object} opts
  * @param {string} opts.projectRef - Supabase project reference
@@ -69,40 +66,30 @@ export async function connectToDatabase({ projectRef, dbPassword, spinner: s }) 
     }
   }
 
-  // 2. Direct host unavailable — use Management API to find pooler host
+  // 2. Direct host unavailable — ask for pooler connection string
   p.log.warning(
     `Direct database host not available for this project.\n` +
     `${pc.dim('Newer Supabase projects require the connection pooler.')}`
   )
   p.log.message(
-    `We can look this up automatically with a Supabase access token.\n` +
-    `${pc.dim('Generate one at:')} ${pc.cyan('https://supabase.com/dashboard/account/tokens')}\n` +
-    `${pc.dim('Click "Generate new token", give it any name, and paste it below.')}`
+    `Go to your Supabase dashboard:\n` +
+    `  ${pc.cyan(`https://supabase.com/dashboard/project/${projectRef}/settings/database`)}\n\n` +
+    `Under ${pc.bold('Connection string')}, change Method to ${pc.bold('Session pooler')},\n` +
+    `then copy the full URI and paste it below.`
   )
 
-  const accessToken = await p.password({
-    message: 'Supabase access token (from account settings)',
+  const poolerInput = await p.text({
+    message: 'Paste your Session pooler connection string',
+    placeholder: 'postgresql://postgres.ref:[YOUR-PASSWORD]@aws-0-us-east-1.pooler.supabase.com:5432/postgres',
     validate: (v) => {
-      if (!v || v.trim().length === 0) return 'Access token is required'
+      if (!v || v.trim().length === 0) return 'Connection string is required'
+      const host = parsePoolerHost(v)
+      if (!host.includes('supabase')) return 'Should be a Supabase connection string or host'
     },
   })
-  if (p.isCancel(accessToken)) { p.cancel('Setup cancelled.'); process.exit(0) }
+  if (p.isCancel(poolerInput)) { p.cancel('Setup cancelled.'); process.exit(0) }
 
-  s.start('Looking up database connection')
-  let poolerHost
-  try {
-    poolerHost = await fetchPoolerHost(projectRef, accessToken.trim())
-    s.stop(`Found pooler host: ${pc.cyan(poolerHost)}`)
-  } catch (apiErr) {
-    s.stop('Lookup failed')
-    p.log.error(
-      `Could not fetch database connection info.\n\n` +
-        `${pc.dim('Error: ' + apiErr.message)}\n\n` +
-        `Make sure your access token is valid.\n` +
-        `Generate one at: ${pc.cyan('https://supabase.com/dashboard/account/tokens')}`
-    )
-    process.exit(1)
-  }
+  const poolerHost = parsePoolerHost(poolerInput)
 
   // 3. Connect via pooler
   connectionString = `postgresql://postgres.${projectRef}:${encodeURIComponent(dbPassword)}@${poolerHost}:5432/postgres`

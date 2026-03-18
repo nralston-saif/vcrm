@@ -65,7 +65,7 @@ This single command walks you through the entire setup:
 1. **Fund branding** -- name, tagline, logo, support email
 2. **Module selection** -- checkboxes for each feature (core modules enabled by default)
 3. **Supabase credentials** -- project URL, anon key, service role key, and database password
-4. **Database migrations** -- connects directly and runs all schema migrations
+4. **Database migrations** -- connects to your database and runs all schema migrations (auto-detects direct vs. pooler connection)
 5. **First user creation** -- email, password, and name for your first login
 6. **Data import** (optional) -- import existing companies, contacts, and investments from CSV
 7. **Webhook setup** (optional) -- guidance for connecting your application intake form
@@ -483,6 +483,7 @@ Your Node.js version is too old. Check with `node --version` and upgrade to 18+ 
 ### Database connection failed during setup
 
 - **Wrong password**: The database password is the one shown when you first created the Supabase project. It's different from your Supabase account password. You can reset it at: `https://supabase.com/dashboard/project/YOUR_PROJECT_REF/settings/database`
+- **ENOTFOUND / host not available**: Newer Supabase projects don't have a direct database host. The setup wizard will detect this and ask you to paste your Session pooler connection string from the Supabase dashboard (Project Settings → Database → Connection string → Session pooler).
 - **Project still provisioning**: New Supabase projects take 1-2 minutes to become available. Wait and try again.
 - **Network issues**: Make sure you're not behind a firewall that blocks port 5432.
 
