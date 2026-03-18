@@ -52,8 +52,8 @@ pnpm install
 2. **Save the database password** shown during project creation -- you'll need it during setup
 3. Once the project is created, you'll need three values from the Supabase dashboard:
    - **Project URL** -- found on the project home page (looks like `https://abc123.supabase.co`)
-   - **Anon (public) key** -- go to **Project Settings** (gear icon) → **API Keys** → copy the `anon` `public` key
-   - **Service role key** -- same page, copy the `service_role` `secret` key (click to reveal it)
+   - **Anon (public) key** -- go to **Project Settings** (gear icon) → **API Keys** → scroll down to **Legacy API** → copy the `anon` `public` key
+   - **Service role key** -- same section, copy the `service_role` `secret` key (click to reveal it)
 
 ### 3. Run the Setup Wizard
 

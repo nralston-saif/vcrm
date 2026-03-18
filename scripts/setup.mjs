@@ -6,6 +6,7 @@ import fs from 'node:fs'
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
 import pg from 'pg'
+import { connectToDatabase } from './db-connect.mjs'
 
 const { Client } = pg
 
@@ -155,7 +156,7 @@ async function main() {
 
   if (!skipEnv) {
     p.log.message(`${pc.dim('Project URL is on your project\'s home page.')}`)
-    p.log.message(`${pc.dim('API keys are in Project Settings (gear icon) → API Keys.')}`)
+    p.log.message(`${pc.dim('API keys are in Project Settings (gear icon) → API Keys → scroll down to Legacy API.')}`)
 
     supabaseUrl = await p.text({
       message: 'Supabase project URL (from project home page)',
@@ -165,13 +166,13 @@ async function main() {
     if (p.isCancel(supabaseUrl)) { p.cancel('Setup cancelled.'); process.exit(0) }
 
     anonKey = await p.password({
-      message: 'Supabase anon (public) key (Project Settings → API Keys)',
+      message: 'Supabase anon (public) key (Project Settings → API Keys → Legacy API)',
       validate: validateKey('Anon key'),
     })
     if (p.isCancel(anonKey)) { p.cancel('Setup cancelled.'); process.exit(0) }
 
     serviceRoleKey = await p.password({
-      message: 'Supabase service role key (same page, click to reveal)',
+      message: 'Supabase service role key (same section, click to reveal)',
       validate: validateKey('Service role key'),
     })
     if (p.isCancel(serviceRoleKey)) { p.cancel('Setup cancelled.'); process.exit(0) }
@@ -349,64 +350,7 @@ SUPABASE_SERVICE_ROLE_KEY=${serviceRoleKey}
 
   const projectRef = supabaseUrl.replace('https://', '').replace(/\.supabase\.co\/?$/, '')
 
-  // Try direct connection first, fall back to pooler if hostname doesn't resolve
-  let connectionString = `postgresql://postgres:${encodeURIComponent(dbPassword)}@db.${projectRef}.supabase.co:5432/postgres`
-  let client = new Client({ connectionString, ssl: { rejectUnauthorized: false } })
-
-  s.start('Connecting to database')
-  try {
-    await client.connect()
-    s.stop('Connected to database')
-  } catch (err) {
-    s.stop('Connection failed')
-
-    if (err.message && err.message.includes('ENOTFOUND')) {
-      p.log.warning(
-        `Direct database host not available for this project.\n` +
-        `${pc.dim('Newer Supabase projects use the connection pooler instead.')}`
-      )
-      p.log.message(
-        `${pc.dim('Find it in: Supabase Dashboard → Project Settings → Database → Connection string → URI')}\n` +
-        `${pc.dim('Choose "Session mode" (port 5432). Copy the host part only (e.g. aws-0-us-east-1.pooler.supabase.com)')}`
-      )
-
-      const poolerHost = await p.text({
-        message: 'Paste your connection pooler host from the Supabase dashboard',
-        placeholder: 'aws-0-us-east-1.pooler.supabase.com',
-        validate: (v) => {
-          if (!v) return 'Host is required'
-          if (!v.includes('pooler.supabase.com') && !v.includes('supabase.')) return 'Should be a Supabase database host'
-        },
-      })
-      if (p.isCancel(poolerHost)) { p.cancel('Setup cancelled.'); process.exit(0) }
-
-      connectionString = `postgresql://postgres.${projectRef}:${encodeURIComponent(dbPassword)}@${poolerHost}:5432/postgres`
-      client = new Client({ connectionString, ssl: { rejectUnauthorized: false } })
-
-      s.start('Connecting via pooler')
-      try {
-        await client.connect()
-        s.stop('Connected to database')
-      } catch (err2) {
-        s.stop('Connection failed')
-        p.log.error(
-          `Could not connect to database.\n\n` +
-            `${pc.dim('Error: ' + err2.message)}\n\n` +
-            `Make sure your database password is correct.\n` +
-            `You can find or reset it in: ${pc.cyan(`https://supabase.com/dashboard/project/${projectRef}/settings/database`)}`
-        )
-        process.exit(1)
-      }
-    } else {
-      p.log.error(
-        `Could not connect to database.\n\n` +
-          `${pc.dim('Error: ' + err.message)}\n\n` +
-          `Make sure your database password is correct.\n` +
-          `You can find or reset it in: ${pc.cyan(`https://supabase.com/dashboard/project/${projectRef}/settings/database`)}`
-      )
-      process.exit(1)
-    }
-  }
+  const client = await connectToDatabase({ projectRef, dbPassword, spinner: s })
 
   // Check for missing migration files
   const missingFiles = MIGRATION_FILES.filter(

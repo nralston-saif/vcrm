@@ -112,6 +112,9 @@ export default function PortfolioClient({
   const [showAddModal, setShowAddModal] = useState(false)
   const [addLoading, setAddLoading] = useState(false)
   const [selectedCompanyId, setSelectedCompanyId] = useState<string>('')
+  const [creatingNewCompany, setCreatingNewCompany] = useState(false)
+  const [newCompanyName, setNewCompanyName] = useState('')
+  const [newCompanyWebsite, setNewCompanyWebsite] = useState('')
   const [investmentAmount, setInvestmentAmount] = useState<number | null>(DEFAULT_INVESTMENT_AMOUNT)
   const [investmentDate, setInvestmentDate] = useState(new Date().toISOString().split('T')[0])
   const [investmentType, setInvestmentType] = useState<string>('safe')
@@ -185,6 +188,9 @@ export default function PortfolioClient({
   const openAddModal = () => {
     // Reset form fields with defaults
     setSelectedCompanyId('')
+    setCreatingNewCompany(false)
+    setNewCompanyName('')
+    setNewCompanyWebsite('')
     setInvestmentAmount(DEFAULT_INVESTMENT_AMOUNT)
     setInvestmentDate(new Date().toISOString().split('T')[0])
     setInvestmentType('safe')
@@ -200,7 +206,12 @@ export default function PortfolioClient({
 
   const handleAddInvestment = async () => {
     // Validation
-    if (!selectedCompanyId) {
+    if (creatingNewCompany) {
+      if (!newCompanyName.trim()) {
+        showToast('Please enter a company name', 'warning')
+        return
+      }
+    } else if (!selectedCompanyId) {
       showToast('Please select a company', 'warning')
       return
     }
@@ -219,8 +230,32 @@ export default function PortfolioClient({
 
     setAddLoading(true)
     try {
+      let companyId = selectedCompanyId
+
+      // Create new company if needed
+      if (creatingNewCompany) {
+        const { data: newCompany, error: companyError } = await supabase
+          .from('companies')
+          .insert({
+            name: newCompanyName.trim(),
+            website: newCompanyWebsite.trim() || null,
+            stage: 'portfolio',
+            is_active: true,
+          })
+          .select('id')
+          .single()
+
+        if (companyError) {
+          console.error('Company creation error:', companyError)
+          showToast('Error creating company: ' + companyError.message, 'error')
+          setAddLoading(false)
+          return
+        }
+        companyId = newCompany.id
+      }
+
       const investmentRecord = {
-        company_id: selectedCompanyId,
+        company_id: companyId,
         investment_date: investmentDate,
         type: investmentType,
         amount: investmentAmount,
@@ -253,11 +288,13 @@ export default function PortfolioClient({
       console.log('Investment created successfully:', data)
 
       // Update company stage to portfolio if not already
-      await supabase
-        .from('companies')
-        .update({ stage: 'portfolio' })
-        .eq('id', selectedCompanyId)
-        .neq('stage', 'portfolio')
+      if (!creatingNewCompany) {
+        await supabase
+          .from('companies')
+          .update({ stage: 'portfolio' })
+          .eq('id', companyId)
+          .neq('stage', 'portfolio')
+      }
 
       showToast('Investment added successfully!', 'success')
       setShowAddModal(false)
@@ -810,19 +847,52 @@ export default function PortfolioClient({
             <div className="p-6 space-y-4 max-h-[70vh] overflow-y-auto">
               {/* Company Selector */}
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1.5">Company *</label>
-                <select
-                  value={selectedCompanyId}
-                  onChange={(e) => setSelectedCompanyId(e.target.value)}
-                  className="input"
-                >
-                  <option value="">Select a company...</option>
-                  {companies.map((company) => (
-                    <option key={company.id} value={company.id}>
-                      {company.name} {company.stage ? `(${company.stage})` : ''}
-                    </option>
-                  ))}
-                </select>
+                <div className="flex items-center justify-between mb-1.5">
+                  <label className="block text-sm font-medium text-gray-700">Company *</label>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setCreatingNewCompany(!creatingNewCompany)
+                      setSelectedCompanyId('')
+                      setNewCompanyName('')
+                      setNewCompanyWebsite('')
+                    }}
+                    className="text-xs text-emerald-600 hover:text-emerald-700 font-medium"
+                  >
+                    {creatingNewCompany ? 'Select existing company' : '+ New company'}
+                  </button>
+                </div>
+                {creatingNewCompany ? (
+                  <div className="space-y-2">
+                    <input
+                      type="text"
+                      value={newCompanyName}
+                      onChange={(e) => setNewCompanyName(e.target.value)}
+                      className="input"
+                      placeholder="Company name"
+                    />
+                    <input
+                      type="text"
+                      value={newCompanyWebsite}
+                      onChange={(e) => setNewCompanyWebsite(e.target.value)}
+                      className="input"
+                      placeholder="Website (optional)"
+                    />
+                  </div>
+                ) : (
+                  <select
+                    value={selectedCompanyId}
+                    onChange={(e) => setSelectedCompanyId(e.target.value)}
+                    className="input"
+                  >
+                    <option value="">Select a company...</option>
+                    {companies.map((company) => (
+                      <option key={company.id} value={company.id}>
+                        {company.name} {company.stage ? `(${company.stage})` : ''}
+                      </option>
+                    ))}
+                  </select>
+                )}
               </div>
 
               {/* Investment Details */}
