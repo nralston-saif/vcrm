@@ -49,3 +49,6 @@ CREATE POLICY "Allow users to delete their avatars"
 ON storage.objects FOR DELETE
 TO authenticated
 USING (bucket_id = 'avatars');
+
+-- Reload PostgREST schema cache so it picks up new tables/relationships
+NOTIFY pgrst, 'reload schema';
