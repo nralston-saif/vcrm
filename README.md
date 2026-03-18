@@ -202,11 +202,19 @@ This creates both the Supabase auth account and the linked CRM profile in one st
 
 ## Importing Existing Data
 
-If you have existing data in spreadsheets, you can import it via CSV:
+You can import data via CSV in two ways:
+
+### In the App
+
+Click your name in the top-right corner and select **Import Data**. This opens an import page where you can upload a CSV file for companies, contacts, or investments. It shows a preview of your data before importing and reports any errors.
+
+### From the Command Line
 
 ```bash
 pnpm import-data
 ```
+
+### CSV Format
 
 CSV templates are included in the `templates/` folder:
 - `templates/companies.csv` -- Company database
