@@ -194,7 +194,7 @@ async function importInvestments(rows, supabaseUrl, serviceRoleKey) {
       amount: row.amount ? parseFloat(row.amount) : null,
       round: row.round || null,
       type: row.type || null,
-      date: row.date || null,
+      investment_date: row.date || row.investment_date || null,
       lead_partner_id: leadPartnerId,
       notes: row.notes || null,
     }
