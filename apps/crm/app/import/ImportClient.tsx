@@ -37,13 +37,18 @@ export default function ImportClient() {
   const router = useRouter()
   const { showToast } = useToast()
 
-  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const selected = e.target.files?.[0]
-    if (!selected) return
+  const detectImportType = (headers: string[]): ImportType | null => {
+    const h = headers.map((s) => s.toLowerCase())
+    if (h.includes('company_name') && h.includes('amount')) return 'investments'
+    if (h.includes('first_name') && h.includes('last_name')) return 'contacts'
+    if (h.includes('name')) return 'companies'
+    return null
+  }
+
+  const processFile = (selected: File) => {
     setFile(selected)
     setResult(null)
 
-    // Parse preview
     const reader = new FileReader()
     reader.onload = (event) => {
       const content = event.target?.result as string
@@ -60,8 +65,32 @@ export default function ImportClient() {
         return obj
       })
       setPreview({ headers, rows })
+
+      // Auto-detect type from headers
+      const detected = detectImportType(headers)
+      if (detected) setImportType(detected)
     }
     reader.readAsText(selected)
+  }
+
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const selected = e.target.files?.[0]
+    if (!selected) return
+    processFile(selected)
+  }
+
+  const handleDrop = (e: React.DragEvent) => {
+    e.preventDefault()
+    e.stopPropagation()
+    const dropped = e.dataTransfer.files?.[0]
+    if (dropped && dropped.name.endsWith('.csv')) {
+      processFile(dropped)
+    }
+  }
+
+  const handleDragOver = (e: React.DragEvent) => {
+    e.preventDefault()
+    e.stopPropagation()
   }
 
   const parseLine = (line: string): string[] => {
@@ -163,7 +192,7 @@ export default function ImportClient() {
 
       {/* File Upload */}
       <div>
-        <label className="block">
+        <label className="block" onDrop={handleDrop} onDragOver={handleDragOver}>
           <div className={`border-2 border-dashed rounded-lg p-8 text-center cursor-pointer transition-colors ${
             file ? 'border-emerald-300 bg-emerald-50' : 'border-gray-300 hover:border-gray-400'
           }`}>
