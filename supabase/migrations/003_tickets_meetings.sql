@@ -75,3 +75,7 @@ CREATE TABLE meeting_notes (
 );
 
 CREATE INDEX idx_meeting_notes_meeting_id ON meeting_notes(meeting_id);
+
+-- Grant access to PostgREST roles
+GRANT ALL ON tickets, ticket_comments, meetings, meeting_notes TO authenticated;
+GRANT ALL ON tickets, ticket_comments, meetings, meeting_notes TO service_role;

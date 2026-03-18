@@ -135,3 +135,7 @@ CREATE TABLE investment_notes (
 );
 
 CREATE INDEX idx_investment_notes_investment_id ON investment_notes(investment_id);
+
+-- Grant access to PostgREST roles
+GRANT ALL ON applications, votes, deliberations, company_notes, people_notes, application_notes, investment_notes TO authenticated;
+GRANT ALL ON applications, votes, deliberations, company_notes, people_notes, application_notes, investment_notes TO service_role;

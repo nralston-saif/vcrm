@@ -115,3 +115,7 @@ CREATE TABLE auth_events (
 
 CREATE INDEX idx_auth_events_user_id ON auth_events(user_id);
 CREATE INDEX idx_auth_events_created_at ON auth_events(created_at);
+
+-- Grant access to PostgREST roles
+GRANT ALL ON notifications, audit_log, news_articles, ticket_reports, auth_events TO authenticated;
+GRANT ALL ON notifications, audit_log, news_articles, ticket_reports, auth_events TO service_role;

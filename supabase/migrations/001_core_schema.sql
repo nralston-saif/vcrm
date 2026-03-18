@@ -160,3 +160,7 @@ CREATE TABLE tags (
   created_by UUID REFERENCES people(id) ON DELETE SET NULL,
   usage_count INTEGER DEFAULT 0
 );
+
+-- Grant access to PostgREST roles
+GRANT ALL ON people, companies, company_people, investments, tags TO authenticated;
+GRANT ALL ON people, companies, company_people, investments, tags TO service_role;
