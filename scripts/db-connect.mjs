@@ -91,23 +91,38 @@ export async function connectToDatabase({ projectRef, dbPassword, spinner: s }) 
 
   const poolerHost = parsePoolerHost(poolerInput)
 
-  // 3. Connect via pooler
+  // 3. Connect via pooler — try with SSL first, then without
   connectionString = `postgresql://postgres.${projectRef}:${encodeURIComponent(dbPassword)}@${poolerHost}:5432/postgres`
-  client = new Client({ connectionString, ssl: { rejectUnauthorized: false } })
 
-  s.start('Connecting via pooler')
-  try {
-    await client.connect()
-    s.stop('Connected to database')
-    return client
-  } catch (err2) {
-    s.stop('Connection failed')
-    p.log.error(
-      `Could not connect to database.\n\n` +
-        `${pc.dim('Error: ' + err2.message)}\n\n` +
-        `Make sure your database password is correct.\n` +
-        `You can find or reset it in: ${pc.cyan(`https://supabase.com/dashboard/project/${projectRef}/settings/database`)}`
-    )
-    process.exit(1)
+  const sslOptions = [
+    { ssl: { rejectUnauthorized: false }, label: 'with SSL' },
+    { ssl: false, label: 'without SSL' },
+  ]
+
+  for (const opt of sslOptions) {
+    client = new Client({ connectionString, ssl: opt.ssl })
+
+    s.start(`Connecting via pooler (${opt.label})`)
+    try {
+      await client.connect()
+      s.stop('Connected to database')
+      return client
+    } catch (err2) {
+      s.stop(`Connection failed (${opt.label})`)
+
+      // If ECONNRESET, try next SSL option
+      if (err2.message && err2.message.includes('ECONNRESET') && opt !== sslOptions[sslOptions.length - 1]) {
+        p.log.info(pc.dim('Retrying with different SSL settings...'))
+        continue
+      }
+
+      p.log.error(
+        `Could not connect to database.\n\n` +
+          `${pc.dim('Error: ' + err2.message)}\n\n` +
+          `Make sure your database password is correct.\n` +
+          `You can find or reset it in: ${pc.cyan(`https://supabase.com/dashboard/project/${projectRef}/settings/database`)}`
+      )
+      process.exit(1)
+    }
   }
 }
