@@ -155,7 +155,8 @@ export default function PersonView({ person, introducerName, activeCompanies, ca
   const [copiedAltEmail, setCopiedAltEmail] = useState<number | null>(null)
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
   const [deleting, setDeleting] = useState(false)
-  const [impersonating, setImpersonating] = useState(false)
+
+
 
   const copyEmailToClipboard = async () => {
     if (person.email) {
@@ -419,32 +420,8 @@ export default function PersonView({ person, introducerName, activeCompanies, ca
     }
   }
 
-  const handleImpersonate = async () => {
-    setImpersonating(true)
-    setError(null)
 
-    try {
-      const response = await fetch('/api/auth/impersonate', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ targetPersonId: person.id }),
-      })
 
-      const result = await response.json()
-
-      if (!response.ok) {
-        setError(result.error || 'Failed to impersonate user')
-        return
-      }
-
-      // Full page reload to ensure layout re-renders
-      window.location.href = '/dashboard'
-    } catch (err: any) {
-      setError('Failed to impersonate user')
-    } finally {
-      setImpersonating(false)
-    }
-  }
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -1119,16 +1096,8 @@ export default function PersonView({ person, introducerName, activeCompanies, ca
 
             {/* Action Buttons */}
             <div className="flex items-center gap-2">
-              {/* Impersonate Button (partners only, non-partners who have signed up) */}
-              {isPartner && person.role !== 'partner' && person.status === 'active' && (
-                <button
-                  onClick={handleImpersonate}
-                  disabled={impersonating}
-                  className="px-4 py-2 bg-amber-500 text-white text-sm font-medium rounded-md hover:bg-amber-600 disabled:opacity-50"
-                >
-                  {impersonating ? 'Starting...' : 'View as User'}
-                </button>
-              )}
+
+
               {/* Create Ticket Button (partners only - handled internally) */}
               <CreateTicketButton currentUserId={currentUserId} />
               {/* Edit Button */}
