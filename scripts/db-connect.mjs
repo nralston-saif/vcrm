@@ -9,28 +9,6 @@ import pg from 'pg'
 const { Client } = pg
 
 /**
- * Parse a Supabase pooler connection string and extract the host.
- * Accepts either a full URI or just the host.
- * Examples:
- *   "postgresql://postgres.ref:pw@aws-0-us-east-1.pooler.supabase.com:5432/postgres"
- *   "aws-0-us-east-1.pooler.supabase.com"
- */
-function parsePoolerHost(input) {
-  const trimmed = input.trim()
-  // If it looks like a URI, extract the host
-  if (trimmed.startsWith('postgresql://') || trimmed.startsWith('postgres://')) {
-    try {
-      const url = new URL(trimmed)
-      return url.hostname
-    } catch {
-      // Fall through to return as-is
-    }
-  }
-  // Strip any port or path if someone pasted "host:5432"
-  return trimmed.split(':')[0].split('/')[0]
-}
-
-/**
  * Connect to a Supabase database.
  * Tries direct connection first; if ENOTFOUND, asks the user to paste
  * their pooler connection string from the Supabase dashboard.
@@ -43,8 +21,14 @@ function parsePoolerHost(input) {
  */
 export async function connectToDatabase({ projectRef, dbPassword, spinner: s }) {
   // 1. Try direct connection
-  let connectionString = `postgresql://postgres:${encodeURIComponent(dbPassword)}@db.${projectRef}.supabase.co:5432/postgres`
-  let client = new Client({ connectionString, ssl: { rejectUnauthorized: false } })
+  let client = new Client({
+    host: `db.${projectRef}.supabase.co`,
+    port: 5432,
+    database: 'postgres',
+    user: 'postgres',
+    password: dbPassword,
+    ssl: { rejectUnauthorized: false },
+  })
 
   s.start('Connecting to database')
   try {
@@ -55,7 +39,6 @@ export async function connectToDatabase({ projectRef, dbPassword, spinner: s }) 
     s.stop('Connection failed')
 
     if (!err.message || !err.message.includes('ENOTFOUND')) {
-      // Not a DNS issue — likely wrong password
       p.log.error(
         `Could not connect to database.\n\n` +
           `${pc.dim('Error: ' + err.message)}\n\n` +
@@ -83,37 +66,55 @@ export async function connectToDatabase({ projectRef, dbPassword, spinner: s }) 
     placeholder: 'postgresql://postgres.ref:[YOUR-PASSWORD]@aws-0-us-east-1.pooler.supabase.com:5432/postgres',
     validate: (v) => {
       if (!v || v.trim().length === 0) return 'Connection string is required'
-      const host = parsePoolerHost(v)
-      if (!host.includes('supabase')) return 'Should be a Supabase connection string or host'
+      if (!v.includes('supabase')) return 'Should be a Supabase connection string'
     },
   })
   if (p.isCancel(poolerInput)) { p.cancel('Setup cancelled.'); process.exit(0) }
 
-  const poolerHost = parsePoolerHost(poolerInput)
+  // 3. Replace [YOUR-PASSWORD] placeholder with the actual password, or use as-is
+  const poolerString = poolerInput.trim().replace('[YOUR-PASSWORD]', dbPassword)
 
-  // 3. Connect via pooler — try with SSL first, then without
-  connectionString = `postgresql://postgres.${projectRef}:${encodeURIComponent(dbPassword)}@${poolerHost}:5432/postgres`
-
-  const sslOptions = [
-    { ssl: { rejectUnauthorized: false }, label: 'with SSL' },
-    { ssl: false, label: 'without SSL' },
+  // 4. Try connecting with the pooler string using multiple SSL configs
+  const attempts = [
+    { ssl: { rejectUnauthorized: false }, label: 'SSL' },
+    { ssl: false, label: 'no SSL' },
   ]
 
-  for (const opt of sslOptions) {
-    client = new Client({ connectionString, ssl: opt.ssl })
+  for (const attempt of attempts) {
+    client = new Client({ connectionString: poolerString, ssl: attempt.ssl })
 
-    s.start(`Connecting via pooler (${opt.label})`)
+    s.start(`Connecting via pooler (${attempt.label})`)
     try {
       await client.connect()
       s.stop('Connected to database')
       return client
     } catch (err2) {
-      s.stop(`Connection failed (${opt.label})`)
+      s.stop(`Failed (${attempt.label})`)
 
-      // If ECONNRESET, try next SSL option
-      if (err2.message && err2.message.includes('ECONNRESET') && opt !== sslOptions[sslOptions.length - 1]) {
+      // If connection was reset, try next SSL config
+      if (err2.message && err2.message.includes('ECONNRESET') && attempt !== attempts[attempts.length - 1]) {
         p.log.info(pc.dim('Retrying with different SSL settings...'))
         continue
+      }
+
+      // Also try transaction pooler (port 6543) as last resort
+      if (err2.message && err2.message.includes('ECONNRESET') && attempt === attempts[attempts.length - 1]) {
+        const txnString = poolerString.replace(':5432/', ':6543/')
+        for (const txnAttempt of attempts) {
+          client = new Client({ connectionString: txnString, ssl: txnAttempt.ssl })
+
+          s.start(`Connecting via transaction pooler (${txnAttempt.label})`)
+          try {
+            await client.connect()
+            s.stop('Connected to database')
+            return client
+          } catch (err3) {
+            s.stop(`Failed (${txnAttempt.label})`)
+            if (err3.message && err3.message.includes('ECONNRESET') && txnAttempt !== attempts[attempts.length - 1]) {
+              continue
+            }
+          }
+        }
       }
 
       p.log.error(
