@@ -127,7 +127,7 @@ CREATE TABLE investments (
   shares NUMERIC,
   common_shares NUMERIC,
   preferred_shares NUMERIC,
-  "FD_shares" NUMERIC,
+  fd_shares NUMERIC,
   share_location TEXT,
   share_cert_numbers TEXT[],
   lead_partner_id UUID REFERENCES people(id) ON DELETE SET NULL,
