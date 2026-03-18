@@ -74,56 +74,40 @@ export async function connectToDatabase({ projectRef, dbPassword, spinner: s }) 
   // 3. Replace [YOUR-PASSWORD] placeholder with the actual password, or use as-is
   const poolerString = poolerInput.trim().replace('[YOUR-PASSWORD]', dbPassword)
 
-  // 4. Try connecting with the pooler string using multiple SSL configs
-  const attempts = [
-    { ssl: { rejectUnauthorized: false }, label: 'SSL' },
-    { ssl: false, label: 'no SSL' },
+  // 4. Try connecting with the pooler string — silently try multiple configs
+  const txnString = poolerString.replace(':5432/', ':6543/')
+  const configs = [
+    { connStr: poolerString, ssl: { rejectUnauthorized: false }, label: 'session pooler (SSL)' },
+    { connStr: poolerString, ssl: false, label: 'session pooler' },
+    { connStr: txnString, ssl: { rejectUnauthorized: false }, label: 'transaction pooler (SSL)' },
+    { connStr: txnString, ssl: false, label: 'transaction pooler' },
   ]
 
-  for (const attempt of attempts) {
-    client = new Client({ connectionString: poolerString, ssl: attempt.ssl })
-
-    s.start(`Connecting via pooler (${attempt.label})`)
+  s.start('Connecting via pooler')
+  let lastError
+  for (const config of configs) {
+    client = new Client({ connectionString: config.connStr, ssl: config.ssl })
     try {
       await client.connect()
-      s.stop('Connected to database')
+      s.stop(`Connected to database via ${config.label}`)
       return client
     } catch (err2) {
-      s.stop(`Failed (${attempt.label})`)
-
-      // If connection was reset, try next SSL config
-      if (err2.message && err2.message.includes('ECONNRESET') && attempt !== attempts[attempts.length - 1]) {
-        p.log.info(pc.dim('Retrying with different SSL settings...'))
+      lastError = err2
+      // Silently try next config if connection was reset
+      if (err2.message && err2.message.includes('ECONNRESET')) {
         continue
       }
-
-      // Also try transaction pooler (port 6543) as last resort
-      if (err2.message && err2.message.includes('ECONNRESET') && attempt === attempts[attempts.length - 1]) {
-        const txnString = poolerString.replace(':5432/', ':6543/')
-        for (const txnAttempt of attempts) {
-          client = new Client({ connectionString: txnString, ssl: txnAttempt.ssl })
-
-          s.start(`Connecting via transaction pooler (${txnAttempt.label})`)
-          try {
-            await client.connect()
-            s.stop('Connected to database')
-            return client
-          } catch (err3) {
-            s.stop(`Failed (${txnAttempt.label})`)
-            if (err3.message && err3.message.includes('ECONNRESET') && txnAttempt !== attempts[attempts.length - 1]) {
-              continue
-            }
-          }
-        }
-      }
-
-      p.log.error(
-        `Could not connect to database.\n\n` +
-          `${pc.dim('Error: ' + err2.message)}\n\n` +
-          `Make sure your database password is correct.\n` +
-          `You can find or reset it in: ${pc.cyan(`https://supabase.com/dashboard/project/${projectRef}/settings/database`)}`
-      )
-      process.exit(1)
+      // Non-ECONNRESET error — stop trying (likely wrong password)
+      break
     }
   }
+
+  s.stop('Connection failed')
+  p.log.error(
+    `Could not connect to database.\n\n` +
+      `${pc.dim('Error: ' + lastError.message)}\n\n` +
+      `Make sure your database password is correct.\n` +
+      `You can find or reset it in: ${pc.cyan(`https://supabase.com/dashboard/project/${projectRef}/settings/database`)}`
+  )
+  process.exit(1)
 }
