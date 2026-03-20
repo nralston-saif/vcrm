@@ -575,6 +575,33 @@ Yes. Supabase can be [self-hosted](https://supabase.com/docs/guides/self-hosting
 
 ---
 
+## Setup with a Coding Agent
+
+If you use a coding agent like [Claude Code](https://claude.com/claude-code), Cursor, or Windsurf, you can paste the following prompt to have it set up the project for you. You'll still need to create a Supabase project first (see [Step 2](#2-create-a-supabase-project) above).
+
+```
+Clone the VCRM repo from https://github.com/nralston-saif/vcrm.git and set it up.
+
+1. Clone the repo and run pnpm install
+2. Run `pnpm init-fund` to start the setup wizard — it will walk me through
+   fund branding, module selection, Supabase credentials, database migrations,
+   creating my first user, and optionally importing data from CSV
+3. After setup completes, run `pnpm doctor` to verify everything is configured correctly
+4. Start the dev server with `pnpm dev` and confirm it builds without errors
+
+If anything fails, check the Troubleshooting section in the README for guidance.
+```
+
+---
+
+## Contact
+
+If you have questions, run into setup issues, or just want to chat about the project, reach out:
+
+**Nick Ralston** — [nick@saif.vc](mailto:nick@saif.vc)
+
+---
+
 ## License
 
 MIT
