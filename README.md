@@ -35,6 +35,8 @@ Enable or disable features in `fund.config.ts`:
 
 ## Setup with a Coding Agent
 
+*If you prefer to set up manually, skip to [Quick Start](#quick-start).*
+
 If you use a coding agent like [Claude Code](https://claude.com/claude-code) or Codex, you can paste the following prompt to have it set up the project for you. You'll still need to create a Supabase project first (see [Step 2](#2-create-a-supabase-project) below).
 
 ```
