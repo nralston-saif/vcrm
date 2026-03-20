@@ -57,12 +57,13 @@ export async function connectToDatabase({ projectRef, dbPassword, spinner: s }) 
   p.log.message(
     `Go to your Supabase dashboard:\n` +
     `  ${pc.cyan(`https://supabase.com/dashboard/project/${projectRef}/settings/database`)}\n\n` +
-    `Under ${pc.bold('Connection string')}, change Method to ${pc.bold('Session pooler')},\n` +
-    `then copy the full URI and paste it below.`
+    `Under ${pc.bold('Connection string')}, ${pc.bold('change Method to Session pooler')},\n` +
+    `then copy the full URI and paste it below exactly as shown —\n` +
+    `don't replace [YOUR-PASSWORD], we'll fill it in automatically.`
   )
 
   const poolerInput = await p.text({
-    message: 'Paste your Session pooler connection string',
+    message: 'Paste the connection string exactly as copied (we\'ll fill in the password)',
     placeholder: 'postgresql://postgres.ref:[YOUR-PASSWORD]@aws-0-us-east-1.pooler.supabase.com:5432/postgres',
     validate: (v) => {
       if (!v || v.trim().length === 0) return 'Connection string is required'
